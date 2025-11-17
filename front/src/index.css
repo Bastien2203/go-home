@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+
+h1{
+  @apply text-3xl font-bold my-1
+}
+
+h2{
+  @apply text-xl font-medium my-1
+}
