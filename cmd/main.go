@@ -1,29 +1,87 @@
 package main
 
 import (
-	"gohome/internal/adapters/basic"
-	"gohome/internal/adapters/homekit"
-	"gohome/internal/api"
-	"gohome/internal/parser"
-	"gohome/internal/scanner"
-	"gohome/internal/state"
+	"context"
+	"fmt"
+	"gohome/internal/adapters"
+	"gohome/internal/core"
+	"gohome/internal/events"
+	"gohome/internal/protocols"
+	"gohome/internal/scanners"
+	"gohome/internal/server"
+	"log"
+	"os"
+	"os/signal"
 )
 
+func setupAdapters(kernel *core.Kernel) {
+	printerAdapter := adapters.NewPrinterAdapter(kernel)
+	if err := kernel.RegisterAdapter(printerAdapter); err != nil {
+		log.Fatal(err)
+	}
+
+	homekitAdapter := adapters.NewHomeKitAdapter(kernel)
+	if err := kernel.RegisterAdapter(homekitAdapter); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func setupProtocols(kernel *core.Kernel) {
+	dummyParser := protocols.NewDummyParser()
+	bthomeParser := protocols.NewBthomeParser()
+	kernel.RegisterProtocol(dummyParser)
+	kernel.RegisterProtocol(bthomeParser)
+}
+
+func setupScanners(ctx context.Context, eventBus *events.EventBus, kernel *core.Kernel) {
+	bluetoothScanner := scanners.NewBluetoothScanner(eventBus)
+	if err := kernel.RegisterScanner(bluetoothScanner, ctx); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
-	store := state.NewMemoryStore()
-	server := api.NewServer(store)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	bluetoothScanner := scanner.NewBluetoothScanner([]string{})
-	httpScanner := scanner.NewHttpScanner([]string{"sensor1", "sensor2"}, server.Router)
+	eventBus := events.NewEventBus()
+	repository := core.NewInMemoryDeviceRepository()
+	kernel := core.NewKernel(eventBus, repository)
 
-	store.SaveParser(parser.NewBthomeParser(bluetoothScanner))
-	store.SaveParser(parser.NewBasicParser(httpScanner))
+	setupAdapters(kernel)
+	setupProtocols(kernel)
+	setupScanners(ctx, eventBus, kernel)
 
-	store.SaveAdapter(homekit.NewHomeKitAdapter())
-	store.SaveAdapter(basic.NewBasicAdapter())
+	defer kernel.Stop()
 
-	server.Start()
+	apiServer := server.NewServer(kernel, 8080)
+	go func() {
+		if err := apiServer.Start(); err != nil {
+			log.Printf("Server error: %v", err)
+		}
+	}()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	<-sigChan
+
+	fmt.Println("\nShutting down...")
 }
 
 //addr := "d69eee9c-8848-5c4c-3c41-d5b88b929976"
 //name := "Temperature Sensor"
+
+// Create and register a thermometer device ------------------------------------------------
+// thermometer := &core.Device{
+// 	ID:           "d69eee9c-8848-5c4c-3c41-d5b88b929976",
+// 	Name:         "Living Room Thermometer",
+// 	Type:         core.TemperatureSensor,
+// 	Protocol:     bthomeParser.Name(),
+// 	AdapterIDs:   []string{homekitAdapter.ID()},
+// 	CreatedAt:    time.Now(),
+// 	Capabilities: map[core.CapabilityType]*core.Capability{},
+// }
+
+// if err := kernel.RegisterDevice(thermometer); err != nil {
+// 	log.Fatal(err)
+// }

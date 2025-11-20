@@ -1,22 +1,19 @@
-import type { Device, Adapter, Parser } from "../types";
-
-
+import type { Adapter, Device, DeviceCreateRequest, Protocol, Scanner } from "../types";
 
 export class ApiService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = "http://localhost:8080") {
-    this.getParsers = this.getParsers.bind(this);
+  constructor(baseUrl: string = "http://localhost:8080/api") {
+    this.baseUrl = baseUrl;
+    
+    // Bindings
     this.getAdapters = this.getAdapters.bind(this);
+    this.getScanners = this.getScanners.bind(this);
+    this.getProtocols = this.getProtocols.bind(this);
     this.getDevices = this.getDevices.bind(this);
     this.createDevice = this.createDevice.bind(this);
-    this.startDevice = this.startDevice.bind(this)
-    this.linkDeviceToAdapter = this.linkDeviceToAdapter.bind(this)
-    this.unlinkDeviceToAdapter = this.unlinkDeviceToAdapter.bind(this)
-    this.stopAdapter = this.stopAdapter.bind(this)
-    this.restartAdapter = this.restartAdapter.bind(this)
-    this.deviceTypes = this.deviceTypes.bind(this)
-    this.baseUrl = baseUrl;
+    this.linkDeviceToAdapter = this.linkDeviceToAdapter.bind(this);
+    this.unlinkDeviceFromAdapter = this.unlinkDeviceFromAdapter.bind(this);
   }
 
   private async getJson<T>(path: string): Promise<T> {
@@ -26,57 +23,49 @@ export class ApiService {
   }
 
   private async post<T>(path: string, body: any): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, { method: "POST", body: JSON.stringify(body) });
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
     if (!res.ok) throw new Error(`Failed to post ${path}: ${res.status}`);
     return res.json();
   }
 
+  private async delete(path: string): Promise<void> {
+    const res = await fetch(`${this.baseUrl}${path}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Failed to delete ${path}: ${res.status}`);
+  }
+
+  // --- Getters ---
   async getAdapters(): Promise<Adapter[]> {
     return this.getJson<Adapter[]>("/adapters");
   }
 
-  async getParsers(): Promise<Parser[]> {
-    return this.getJson<Parser[]>("/parsers");
+  async getScanners(): Promise<Scanner[]> {
+    return this.getJson<Scanner[]>("/scanners");
   }
 
-  async deviceTypes(): Promise<Record<string, string>> {
-    return this.getJson<Record<string, string>>("/device-types");
+  async getProtocols(): Promise<Protocol[]> {
+    return this.getJson<Protocol[]>("/protocols");
   }
 
   async getDevices(): Promise<Device[]> {
     return this.getJson<Device[]>("/devices");
   }
 
-  async createDevice(device: Device): Promise<any> {
-    this.post("/devices", device)
+  // --- Actions ---
+  async createDevice(req: DeviceCreateRequest): Promise<Device> {
+    return this.post<Device>("/devices", req);
   }
 
-  async startDevice(device: Device): Promise<any> {
-    this.post(`/devices/${device.addr}/start`, {})
+  async linkDeviceToAdapter(deviceId: string, adapterId: string): Promise<void> {
+    return this.post(`/devices/${deviceId}/adapters/${adapterId}`, {});
   }
 
-  async startAdapter(adapter: Adapter): Promise<any> {
-    this.post(`/adapter/${adapter.id}/start`, {})
-  }
-
-  async stopAdapter(adapter: Adapter): Promise<any> {
-    this.post(`/adapter/${adapter.id}/stop`, {})
-  }
-
-  async restartAdapter(adapter: Adapter): Promise<any> {
-    this.post(`/adapter/${adapter.id}/restart`, {})
-  }
-
-  async linkDeviceToAdapter(device: Device, adapter: Adapter): Promise<any> {
-    this.post(`/devices/${device.addr}/link`, {
-      adapter_id: adapter.id
-    })
-  }
-
-  async unlinkDeviceToAdapter(device: Device, adapter: Adapter): Promise<any> {
-    this.post(`/devices/${device.addr}/unlink`, {
-      adapter_id: adapter.id
-    })
+  async unlinkDeviceFromAdapter(deviceId: string, adapterId: string): Promise<void> {
+    return this.delete(`/devices/${deviceId}/adapters/${adapterId}`);
   }
 }
-export const api = new ApiService()
+
+export const api = new ApiService();
