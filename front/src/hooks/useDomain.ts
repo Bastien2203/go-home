@@ -1,15 +1,15 @@
 import { api } from "../services/api";
-import type { DeviceCreateRequest } from "../types";
+import type { DeviceCreateRequest } from "../types/device";
 import { useApi } from "./useApi";
 
 export function useAdapters() {
   const h = useApi(api.getAdapters);
-  return { adapters: h.data || [], loading: h.loading, error: h.error };
+  return { adapters: h.data || [], adaptersLoading: h.loading, adaptersError: h.error };
 }
 
 export function useScanners() {
   const h = useApi(api.getScanners);
-  return { scanners: h.data || [], loading: h.loading };
+  return { scanners: h.data || [], scannersLoading: h.loading, scannersError: h.error };
 }
 
 export function useProtocols() {
@@ -37,7 +37,8 @@ export function useDevices() {
 
   return {
     devices: h.data || [],
-    loading: h.loading,
+    devicesLoading: h.loading,
+    devicesError: h.error,
     refreshDevices: h.refresh,
     createDevice: create,
     linkAdapter: link,

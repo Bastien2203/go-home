@@ -7,4 +7,5 @@ type Adapter interface {
 	Stop() error
 	OnDeviceData(data *DeviceStateUpdate) error
 	OnDeviceRegistered(device *Device) error
+	State() State
 }

@@ -1,4 +1,4 @@
-import type { Adapter, Device, DeviceCreateRequest, Protocol, Scanner } from "../types";
+import type { Adapter, Device, DeviceCreateRequest, Protocol, Scanner } from "../types/device";
 
 export class ApiService {
   private baseUrl: string;

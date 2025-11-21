@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import type { Adapter, DeviceCreateRequest, Protocol } from "../types";
+import type { Adapter } from "../../../types/adapter";
+import type { DeviceCreateRequest } from "../../../types/device";
+import type { Protocol } from "../../../types/protocol";
 
 interface Props {
   onSubmit: (req: DeviceCreateRequest) => void;
@@ -36,8 +38,7 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4">Add New Device</h2>
+    <>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -93,7 +94,7 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
                 onClick={() => toggleAdapter(a.id)}
                 className={`px-3 py-1 rounded-full text-sm border ${
                   formData.adapter_ids.includes(a.id)
-                    ? "bg-blue-500 text-white border-blue-600"
+                    ? "bg-primary-500 text-white border-primary-600"
                     : "bg-gray-100 text-gray-600 border-gray-300"
                 }`}
               >
@@ -110,6 +111,6 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
           Register Device
         </button>
       </form>
-    </div>
+    </>
   );
 };

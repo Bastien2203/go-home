@@ -29,6 +29,7 @@ type HomekitAdapter struct {
 	serverStop   context.CancelFunc
 	mu           sync.Mutex
 	restartTimer *time.Timer
+	adapterState core.State
 }
 
 func NewHomeKitAdapter(k *core.Kernel) *HomekitAdapter {
@@ -42,15 +43,20 @@ func NewHomeKitAdapter(k *core.Kernel) *HomekitAdapter {
 	bridge := accessory.NewBridge(info)
 
 	return &HomekitAdapter{
-		kernel:      k,
-		accessories: make(map[string]*accessory.A),
-		knownCaps:   make(map[string]map[core.CapabilityType]bool),
-		bridge:      bridge,
+		kernel:       k,
+		accessories:  make(map[string]*accessory.A),
+		knownCaps:    make(map[string]map[core.CapabilityType]bool),
+		bridge:       bridge,
+		adapterState: core.StateStopped,
 	}
 }
 
 func (h *HomekitAdapter) ID() string {
 	return "homekit"
+}
+
+func (h *HomekitAdapter) State() core.State {
+	return h.adapterState
 }
 
 func (h *HomekitAdapter) Name() string {
@@ -219,6 +225,7 @@ func (h *HomekitAdapter) updateAccessoryValue(acc *accessory.A, data *core.Devic
 }
 
 func (h *HomekitAdapter) scheduleReload() {
+	h.adapterState = core.StateRestarting
 	go func() {
 		h.mu.Lock()
 		defer h.mu.Unlock()
@@ -276,6 +283,8 @@ func (h *HomekitAdapter) reloadServer() error {
 			log.Printf("[HomeKit] Server stopped with error: %v", err)
 		}
 	}()
+
+	h.adapterState = core.StateRunning
 
 	return nil
 }

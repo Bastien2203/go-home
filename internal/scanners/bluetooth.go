@@ -33,8 +33,13 @@ func (s *BluetoothScanner) Name() string {
 	return "Bluetooth Scanner"
 }
 
-func (s *BluetoothScanner) IsRunning() bool {
-	return s.started
+func (s *BluetoothScanner) State() core.State {
+	switch s.started {
+	case true:
+		return core.StateRunning
+	default:
+		return core.StateStopped
+	}
 }
 
 func (s *BluetoothScanner) Start(ctx context.Context) error {

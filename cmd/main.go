@@ -27,7 +27,7 @@ func setupAdapters(kernel *core.Kernel) {
 }
 
 func setupProtocols(kernel *core.Kernel) {
-	dummyParser := protocols.NewDummyParser()
+	dummyParser := protocols.NewHttpParser()
 	bthomeParser := protocols.NewBthomeParser()
 	kernel.RegisterProtocol(dummyParser)
 	kernel.RegisterProtocol(bthomeParser)
@@ -36,6 +36,11 @@ func setupProtocols(kernel *core.Kernel) {
 func setupScanners(ctx context.Context, eventBus *events.EventBus, kernel *core.Kernel) {
 	bluetoothScanner := scanners.NewBluetoothScanner(eventBus)
 	if err := kernel.RegisterScanner(bluetoothScanner, ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	httpScanner := scanners.NewHTTPScanner(eventBus, 8888)
+	if err := kernel.RegisterScanner(httpScanner, ctx); err != nil {
 		log.Fatal(err)
 	}
 }

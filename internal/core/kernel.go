@@ -114,9 +114,9 @@ func (k *Kernel) ListScanners() []map[string]any {
 	list := make([]map[string]any, 0, len(k.scanners))
 	for _, scanner := range k.scanners {
 		list = append(list, map[string]any{
-			"id":         scanner.ID(),
-			"name":       scanner.Name(),
-			"is_running": scanner.IsRunning(),
+			"id":    scanner.ID(),
+			"name":  scanner.Name(),
+			"state": scanner.State(),
 		})
 	}
 
@@ -152,8 +152,9 @@ func (k *Kernel) ListAdapters() []map[string]any {
 	list := make([]map[string]any, 0, len(k.adapters))
 	for _, adapter := range k.adapters {
 		list = append(list, map[string]any{
-			"id":   adapter.ID(),
-			"name": adapter.Name(),
+			"id":    adapter.ID(),
+			"name":  adapter.Name(),
+			"state": adapter.State(),
 		})
 	}
 

@@ -53,7 +53,8 @@ func NewDevice(address, name, protocol string, adapterIDs []string, addressType 
 type AddressType string
 
 const (
-	BLEAddress AddressType = "ble"
+	BLEAddress   AddressType = "ble"
+	BasicAddress AddressType = "basic"
 )
 
 type DeviceRepository interface {

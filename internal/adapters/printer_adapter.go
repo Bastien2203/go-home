@@ -8,17 +8,23 @@ import (
 )
 
 type PrinterAdapter struct {
-	kernel *core.Kernel
+	kernel       *core.Kernel
+	adapterState core.State
 }
 
 func NewPrinterAdapter(k *core.Kernel) *PrinterAdapter {
 	return &PrinterAdapter{
-		kernel: k,
+		kernel:       k,
+		adapterState: core.StateStopped,
 	}
 }
 
 func (p *PrinterAdapter) ID() string {
 	return "printer"
+}
+
+func (p *PrinterAdapter) State() core.State {
+	return p.adapterState
 }
 
 func (h *PrinterAdapter) Name() string {
@@ -27,11 +33,13 @@ func (h *PrinterAdapter) Name() string {
 
 func (p *PrinterAdapter) Start() error {
 	fmt.Println("Printer adapter started")
+	p.adapterState = core.StateRunning
 	return nil
 }
 
 func (p *PrinterAdapter) Stop() error {
 	fmt.Println("Printer adapter stopped")
+	p.adapterState = core.StateStopped
 	return nil
 }
 
