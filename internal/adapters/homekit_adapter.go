@@ -127,11 +127,25 @@ func (h *HomekitAdapter) OnDeviceRegistered(dev *core.Device) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	log.Printf("[HomeKit] Device registered in Kernel: %s", dev.ID)
+	log.Printf("[HomeKit] Device registered : %s", dev.ID)
 
 	if changed := h.updateDeviceStructure(dev.ID, dev.Name, dev.Protocol, dev.Capabilities); changed {
 		h.scheduleReload()
 	}
+
+	return nil
+}
+
+func (h *HomekitAdapter) OnDeviceUnregistered(dev *core.Device) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	log.Printf("[HomeKit] Device unregistered : %s", dev.ID)
+
+	delete(h.knownCaps, dev.ID)
+	delete(h.accessories, dev.ID)
+
+	h.scheduleReload()
 
 	return nil
 }
@@ -250,6 +264,7 @@ func (h *HomekitAdapter) scheduleReload() {
 }
 
 func (h *HomekitAdapter) reloadServer() error {
+	h.adapterState = core.StateStopped
 	if h.serverStop != nil {
 		h.serverStop()
 		h.serverStop = nil

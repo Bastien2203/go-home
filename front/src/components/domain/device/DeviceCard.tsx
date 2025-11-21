@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Adapter } from "../../../types/adapter";
 import type { Device } from "../../../types/device";
 import { AdapterToggle } from "./AdapterToggle";
@@ -17,13 +18,13 @@ export const DeviceCard = ({
   adapters,
   onLink,
   onUnlink,
-}: DeviceCardProps) => {
-  
+}: DeviceCardProps) => {  
   return (
-    <div className="flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden h-full">
+    <div className="flex flex-col justify-between bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden h-full">
       
       <DeviceHeader device={device} />
       
+    
       <DeviceCapabilities device={device} />
 
       <div className="px-5 py-4 bg-gray-50/80 border-t border-gray-100">

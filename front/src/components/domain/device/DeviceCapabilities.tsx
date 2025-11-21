@@ -3,6 +3,7 @@ import { getIcon } from "../../../services/icons";
 import { formatNumber } from "../../../services/numbers";
 import { formatUnit } from "../../../services/units";
 import type { Device } from "../../../types/device";
+import { formatDatetime } from "../../../services/dates";
 
 
 export const DeviceCapabilities = ({ device }: { device: Device }) => {
@@ -11,6 +12,8 @@ export const DeviceCapabilities = ({ device }: { device: Device }) => {
 
   return (
     <div className="p-5 flex-1 bg-white">
+      
+     
       {hasData ? (
         <div className="space-y-3">
           {capabilities.map((cap) => (
@@ -31,6 +34,9 @@ export const DeviceCapabilities = ({ device }: { device: Device }) => {
               </div>
             </div>
           ))}
+          <span className="text-xs text-gray-400">
+            Last update:  {formatDatetime(device.last_updated)}
+          </span>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-6 text-gray-400 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">

@@ -1,22 +1,23 @@
-package core
+package repository
 
 import (
+	"gohome/internal/core"
 	"slices"
 	"sync"
 )
 
 type InMemoryDeviceRepository struct {
-	devices map[string]*Device
+	devices map[string]*core.Device
 	mu      sync.RWMutex
 }
 
 func NewInMemoryDeviceRepository() *InMemoryDeviceRepository {
 	return &InMemoryDeviceRepository{
-		devices: make(map[string]*Device),
+		devices: make(map[string]*core.Device),
 	}
 }
 
-func (r *InMemoryDeviceRepository) Save(device *Device) error {
+func (r *InMemoryDeviceRepository) Save(device *core.Device) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -24,7 +25,7 @@ func (r *InMemoryDeviceRepository) Save(device *Device) error {
 	return nil
 }
 
-func (r *InMemoryDeviceRepository) FindByID(id string) (*Device, error) {
+func (r *InMemoryDeviceRepository) FindByID(id string) (*core.Device, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -35,11 +36,11 @@ func (r *InMemoryDeviceRepository) FindByID(id string) (*Device, error) {
 	return device, nil
 }
 
-func (r *InMemoryDeviceRepository) FindAll() ([]*Device, error) {
+func (r *InMemoryDeviceRepository) FindAll() ([]*core.Device, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	devices := make([]*Device, 0, len(r.devices))
+	devices := make([]*core.Device, 0, len(r.devices))
 	for _, device := range r.devices {
 		devices = append(devices, device)
 	}
@@ -64,7 +65,23 @@ func (r *InMemoryDeviceRepository) LinkAdapter(deviceID, adapterID string) error
 	return nil
 }
 
-func (r *InMemoryDeviceRepository) FindByAddress(address string, addressType AddressType) (*Device, error) {
+func (r *InMemoryDeviceRepository) UnlinkAdapter(deviceID, adapterID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	device, exists := r.devices[deviceID]
+	if !exists {
+		return nil
+	}
+
+	device.AdapterIDs = slices.DeleteFunc(device.AdapterIDs, func(e string) bool {
+		return e == adapterID
+	})
+
+	return nil
+}
+
+func (r *InMemoryDeviceRepository) FindByAddress(address string, addressType core.AddressType) (*core.Device, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

@@ -47,6 +47,8 @@ func (k *Kernel) handleStateUpdate(event events.Event) {
 		return
 	}
 
+	device.LastUpdated = rawData.Timestamp
+
 	protocol, exists := k.protocols[device.Protocol]
 	if !exists {
 		log.Printf("[Kernel] (handleStateUpdate) Protocol not found for device %s: %s", device.ID, device.Protocol)
@@ -64,7 +66,11 @@ func (k *Kernel) handleStateUpdate(event events.Event) {
 	for _, c := range deviceData {
 		device.Capabilities[c.Name] = c
 	}
+
 	mu.Unlock()
+	if err := k.repository.Save(device); err != nil {
+		log.Printf("[Kernel] Error when saving device %s", err.Error())
+	}
 
 	for _, adapterID := range device.AdapterIDs {
 		if adapter, exists := k.adapters[adapterID]; exists {
@@ -234,22 +240,36 @@ func (ds *Kernel) ListDevices() ([]*Device, error) {
 
 // --- Linking Logic ---
 
-func (ds *Kernel) LinkDeviceToAdapter(deviceID, adapterID string) error {
-	device, err := ds.repository.FindByID(deviceID)
+func (k *Kernel) LinkDeviceToAdapter(deviceID, adapterID string) error {
+	device, err := k.repository.FindByID(deviceID)
 	if err != nil || device == nil {
 		return fmt.Errorf("device not found: %s", deviceID)
 	}
-	adapter, exists := ds.adapters[adapterID]
+	adapter, exists := k.adapters[adapterID]
 	if !exists {
 		return fmt.Errorf("adapter not found: %s", adapterID)
 	}
 
-	if err := ds.repository.LinkAdapter(deviceID, adapterID); err != nil {
+	if err := k.repository.LinkAdapter(deviceID, adapterID); err != nil {
 		return err
 	}
 
-	adapter.OnDeviceRegistered(device)
+	return adapter.OnDeviceRegistered(device)
+}
 
-	log.Printf("[Kernel] (LinkDeviceToAdapter) Device %s linked to adapter %s", deviceID, adapterID)
-	return nil
+func (k *Kernel) UnlinkDeviceFromAdapter(deviceID, adapterID string) error {
+	device, err := k.repository.FindByID(deviceID)
+	if err != nil || device == nil {
+		return fmt.Errorf("device not found: %s", deviceID)
+	}
+	adapter, exists := k.adapters[adapterID]
+	if !exists {
+		return fmt.Errorf("adapter not found: %s", adapterID)
+	}
+
+	if err := k.repository.UnlinkAdapter(deviceID, adapterID); err != nil {
+		return err
+	}
+
+	return adapter.OnDeviceUnregistered(device)
 }

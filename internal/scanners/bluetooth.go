@@ -97,6 +97,14 @@ func (s *BluetoothScanner) scanLoop(_ context.Context) {
 					AddressType: core.BLEAddress,
 				},
 			})
+
+			s.eventBus.Publish(events.Event{
+				Type: events.BluetoothDeviceFound,
+				Payload: &BluetoothDevice{
+					Name:    device.LocalName(),
+					Address: device.Address.String(),
+				},
+			})
 		}
 	})
 
@@ -120,4 +128,9 @@ func (s *BluetoothScanner) Stop() error {
 
 	log.Println("[Bluetooth Scanner] Stopped")
 	return err
+}
+
+type BluetoothDevice struct {
+	Name    string `json:"name"`
+	Address string `json:"address"`
 }

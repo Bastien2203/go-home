@@ -32,13 +32,13 @@ func (h *PrinterAdapter) Name() string {
 }
 
 func (p *PrinterAdapter) Start() error {
-	fmt.Println("Printer adapter started")
+	fmt.Println("[Printer adapter] started")
 	p.adapterState = core.StateRunning
 	return nil
 }
 
 func (p *PrinterAdapter) Stop() error {
-	fmt.Println("Printer adapter stopped")
+	fmt.Println("[Printer adapter] stopped")
 	p.adapterState = core.StateStopped
 	return nil
 }
@@ -61,6 +61,11 @@ func (p *PrinterAdapter) OnDeviceData(data *core.DeviceStateUpdate) error {
 }
 
 func (p *PrinterAdapter) OnDeviceRegistered(dev *core.Device) error {
-	fmt.Printf("Printer Adapter: New device registered: %s (%s)\n", dev.Name, dev.ID)
+	fmt.Printf("[Printer Adapter] New device registered: %s (%s)\n", dev.Name, dev.ID)
+	return nil
+}
+
+func (p *PrinterAdapter) OnDeviceUnregistered(dev *core.Device) error {
+	fmt.Printf("[Printer Adapter] device unregistered: %s (%s)\n", dev.Name, dev.ID)
 	return nil
 }

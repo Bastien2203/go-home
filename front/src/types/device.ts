@@ -10,6 +10,7 @@ export interface Device {
   adapter_ids: string[];
   created_at: string;
   capabilities: Record<CapabilityType, Capability>;
+  last_updated: string;
 }
 
 

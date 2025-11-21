@@ -5,7 +5,8 @@ import "sync"
 type EventType string
 
 const (
-	RawDataReceived EventType = "raw_data_received"
+	RawDataReceived      EventType = "raw_data_received"
+	BluetoothDeviceFound EventType = "bluetooth_device_found"
 )
 
 type Event struct {

@@ -35,6 +35,7 @@ type Device struct {
 	AdapterIDs   []string                       `json:"adapter_ids"`
 	CreatedAt    time.Time                      `json:"created_at"`
 	Capabilities map[CapabilityType]*Capability `json:"capabilities"`
+	LastUpdated  time.Time                      `json:"last_updated"`
 }
 
 func NewDevice(address, name, protocol string, adapterIDs []string, addressType AddressType) *Device {
@@ -47,6 +48,7 @@ func NewDevice(address, name, protocol string, adapterIDs []string, addressType 
 		AdapterIDs:   adapterIDs,
 		CreatedAt:    time.Now(),
 		Capabilities: make(map[CapabilityType]*Capability),
+		LastUpdated:  time.Now(),
 	}
 }
 
@@ -62,5 +64,6 @@ type DeviceRepository interface {
 	FindByID(id string) (*Device, error)
 	FindAll() ([]*Device, error)
 	LinkAdapter(deviceID, adapterID string) error
+	UnlinkAdapter(deviceID, adapterID string) error
 	FindByAddress(address string, addressType AddressType) (*Device, error)
 }

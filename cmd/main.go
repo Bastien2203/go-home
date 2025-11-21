@@ -7,8 +7,10 @@ import (
 	"gohome/internal/core"
 	"gohome/internal/events"
 	"gohome/internal/protocols"
+	"gohome/internal/repository"
 	"gohome/internal/scanners"
 	"gohome/internal/server"
+	"gohome/internal/websockets"
 	"log"
 	"os"
 	"os/signal"
@@ -50,8 +52,17 @@ func main() {
 	defer cancel()
 
 	eventBus := events.NewEventBus()
-	repository := core.NewInMemoryDeviceRepository()
-	kernel := core.NewKernel(eventBus, repository)
+	db, err := repository.SetupSQLiteDB("./gohome.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	deviceRepo, err := repository.NewSQLiteDeviceRepository(db)
+	if err != nil {
+		log.Fatalf("Error init sqlite repo: %v", err)
+	}
+	kernel := core.NewKernel(eventBus, deviceRepo)
 
 	setupAdapters(kernel)
 	setupProtocols(kernel)
@@ -59,12 +70,18 @@ func main() {
 
 	defer kernel.Stop()
 
-	apiServer := server.NewServer(kernel, 8080)
+	wsHub := websockets.NewHub()
+	go wsHub.Run()
+	apiServer := server.NewServer(kernel, 8080, wsHub)
 	go func() {
 		if err := apiServer.Start(); err != nil {
 			log.Printf("Server error: %v", err)
 		}
 	}()
+
+	eventBus.Subscribe(events.BluetoothDeviceFound, func(event events.Event) {
+		wsHub.Broadcast(websockets.TopicBluetoothDevice, event.Payload)
+	})
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)

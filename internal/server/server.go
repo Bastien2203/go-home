@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gohome/internal/core"
+	"gohome/internal/websockets"
 	"log"
 	"net/http"
 )
@@ -11,12 +12,14 @@ import (
 type Server struct {
 	kernel *core.Kernel
 	addr   string
+	wsHub  *websockets.Hub
 }
 
-func NewServer(kernel *core.Kernel, port int) *Server {
+func NewServer(kernel *core.Kernel, port int, wsHub *websockets.Hub) *Server {
 	return &Server{
 		kernel: kernel,
 		addr:   fmt.Sprintf(":%d", port),
+		wsHub:  wsHub,
 	}
 }
 
@@ -26,6 +29,10 @@ func (s *Server) Start() error {
 	handler := s.corsMiddleware(mux)
 
 	// --- Routes ---
+
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		websockets.ServeWs(s.wsHub, w, r)
+	})
 
 	mux.HandleFunc("GET /api/adapters", s.handleListAdapters)
 	mux.HandleFunc("GET /api/scanners", s.handleListScanners)
@@ -108,8 +115,15 @@ func (s *Server) handleLinkAdapter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUnlinkAdapter(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte(`{"error": "Unlink adapter not implemented yet"}`))
+	deviceID := r.PathValue("id")
+	adapterID := r.PathValue("adapterId")
+
+	if err := s.kernel.UnlinkDeviceFromAdapter(deviceID, adapterID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "unlinked"}`))
 }
 
 // --- Middleware ---

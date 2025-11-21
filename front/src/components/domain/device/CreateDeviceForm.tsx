@@ -7,13 +7,17 @@ interface Props {
   onSubmit: (req: DeviceCreateRequest) => void;
   protocols: Protocol[];
   adapters: Adapter[];
+  defaultData?: {
+    name?: string;
+    address?: string;
+  }
 }
 
 export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
 
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
+    name: props.defaultData?.name ?? "",
+    address: props.defaultData?.address ?? "",
     protocol: "",
     adapter_ids: [] as string[],
   });
@@ -54,7 +58,7 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Physical Address (MAC)
+            Address <i className="text-gray-400 font-light">(depend of protocol)</i>
           </label>
           <input
             type="text"
@@ -73,7 +77,6 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
             value={formData.protocol}
             onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
           >
-            <option value="">-- Select Protocol --</option>
             {props.protocols.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}

@@ -6,6 +6,8 @@ require (
 	github.com/Bastien2203/bthomev2 v1.0.0
 	github.com/brutella/hap v0.0.35
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
+	github.com/mattn/go-sqlite3 v1.14.32
 	tinygo.org/x/bluetooth v0.10.1-0.20250105094942-376e2b9b1d4e
 )
 
