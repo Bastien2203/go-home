@@ -65,20 +65,12 @@ func (m *PluginManager) subscribeToEvents() error {
 func (m *PluginManager) onPluginAck(p plugin.Plugin) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	if _, ok := m.ack[p.ID]; !ok {
-		m.ack[p.ID] = make(chan struct{}, 1)
-	}
 	m.ack[p.ID] <- struct{}{}
 }
 
 func (m *PluginManager) onPluginNegativeAck(p plugin.Plugin) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	if _, ok := m.negativeAck[p.ID]; !ok {
-		m.negativeAck[p.ID] = make(chan struct{}, 1)
-	}
 	m.negativeAck[p.ID] <- struct{}{}
 }
 
@@ -91,10 +83,21 @@ func (m *PluginManager) onPluginConnected(p plugin.Plugin) {
 		return
 	}
 
+	if _, ok := m.ack[p.ID]; ok {
+		log.Printf("[PluginManager] plugin with ID:%s already exists in ack map", p.ID)
+		return
+	}
+
+	if _, ok := m.negativeAck[p.ID]; ok {
+		log.Printf("[PluginManager] plugin with ID:%s already exists in negativeAck map", p.ID)
+		return
+	}
 	if _, ok := m.plugins[p.Type]; !ok {
 		m.plugins[p.Type] = make(map[string]*plugin.Plugin)
 	}
 
+	m.negativeAck[p.ID] = make(chan struct{}, 1)
+	m.ack[p.ID] = make(chan struct{}, 1)
 	m.plugins[p.Type][p.ID] = &p
 }
 
@@ -107,6 +110,18 @@ func (m *PluginManager) onPluginDisconnected(p plugin.Plugin) {
 		return
 	}
 
+	if _, ok := m.ack[p.ID]; !ok {
+		log.Printf("[PluginManager] plugin with ID:%s doesnt exists in ack map", p.ID)
+		return
+	}
+
+	if _, ok := m.negativeAck[p.ID]; !ok {
+		log.Printf("[PluginManager] plugin with ID:%s doesnt exists in negativeAck map", p.ID)
+		return
+	}
+
+	delete(m.negativeAck, p.ID)
+	delete(m.ack, p.ID)
 	delete(m.plugins[p.Type], p.ID)
 }
 
@@ -163,14 +178,19 @@ func (m *PluginManager) StopPlugin(p *plugin.Plugin) error {
 }
 
 func (m *PluginManager) StartPlugin(p *plugin.Plugin) error {
+	m.mu.Lock()
+	ack := m.ack[p.ID]
+	nack := m.negativeAck[p.ID]
+	m.mu.Unlock()
 	m.eventBus.Publish(events.Event{
 		Type:    events.PluginStart(p.ID),
 		Payload: []any{},
 	})
+
 	select {
-	case <-m.ack[p.ID]:
+	case <-ack:
 		return nil
-	case <-m.negativeAck[p.ID]:
+	case <-nack:
 		return fmt.Errorf("error starting %s %s", p.Type, p.Name)
 	case <-time.After(TimeoutDuration):
 		return fmt.Errorf("timeout starting %s %s", p.Type, p.Name)

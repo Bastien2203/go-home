@@ -13,7 +13,7 @@ import (
 func LoadFromEnv(ctx context.Context) *Config {
 	env := os.Getenv("ENV")
 
-	// No .env file for production
+	// No .env file for productions
 	if env != "PROD" {
 		err := godotenv.Load()
 		if err != nil {
@@ -26,4 +26,8 @@ func LoadFromEnv(ctx context.Context) *Config {
 		log.Fatalf("%+v\n", err)
 	}
 	return cfg
+}
+
+func IsDebug() bool {
+	return os.Getenv("DEBUG") == "true"
 }

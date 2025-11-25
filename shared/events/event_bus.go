@@ -3,6 +3,7 @@ package events
 import (
 	"encoding/json"
 	"fmt"
+	"gohome/shared/config"
 	"log"
 	"time"
 
@@ -48,6 +49,7 @@ type Event struct {
 
 type EventBus struct {
 	client mqtt.Client
+	debug  bool
 }
 
 func NewEventBus(brokerURL string, clientID string) (*EventBus, error) {
@@ -68,7 +70,7 @@ func NewEventBus(brokerURL string, clientID string) (*EventBus, error) {
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		return nil, token.Error()
 	}
-	return &EventBus{client: client}, nil
+	return &EventBus{client: client, debug: config.IsDebug()}, nil
 }
 
 func (eb *EventBus) subscribeRaw(eventType EventType, handler func(payload []byte)) error {
@@ -101,6 +103,10 @@ func (eb *EventBus) Publish(event Event) error {
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if eb.debug {
+		log.Printf("[EventBus] Publish event (%s) : %s\n", event.Type, string(payloadBytes))
 	}
 
 	token := eb.client.Publish(string(event.Type), 0, false, payloadBytes)
