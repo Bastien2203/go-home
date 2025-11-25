@@ -1,4 +1,16 @@
-FROM golang:1.25-alpine AS builder
+FROM node:22.15-alpine AS node-builder
+
+WORKDIR /app
+COPY front/package.json ./
+COPY front/package-lock.json ./
+RUN npm install
+
+ENV VITE_APP_ENV=production
+
+COPY front/ .
+RUN npm run build
+
+FROM golang:1.25-alpine AS go-builder
 
 WORKDIR /app
 
@@ -48,9 +60,9 @@ RUN mkdir -p /run/dbus
 
 WORKDIR /app
 
-
-COPY --from=builder /app/core ./core
-COPY --from=builder /app/bin ./bin
+COPY --from=node-builder /app/dist ./dist
+COPY --from=go-builder /app/core ./core
+COPY --from=go-builder /app/bin ./bin
 
 RUN chmod +x ./core
 

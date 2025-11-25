@@ -3,10 +3,14 @@ import type { Device, DeviceCreateRequest } from "../types/device";
 import type { Protocol } from "../types/protocol";
 import type { Scanner } from "../types/scanner";
 
+const env = import.meta.env.VITE_APP_ENV;
+export const API_HOST = env == "production" ? document.location.origin : "http://localhost:8080";
+
+
 export class ApiService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = "http://localhost:8080/api") {
+  constructor(baseUrl: string = `${API_HOST}/api`) {
     this.baseUrl = baseUrl;
     
     // Bindings

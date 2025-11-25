@@ -8,6 +8,9 @@ import (
 	"gohome/shared/types"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Server struct {
@@ -26,6 +29,8 @@ func NewServer(kernel *core.Kernel, port int, wsHub *websockets.Hub) *Server {
 
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
+
+	staticDir := "./dist"
 
 	handler := s.corsMiddleware(mux)
 
@@ -50,6 +55,23 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /api/scanners/stop/{scannerId}", s.handleStopScanner)
 	mux.HandleFunc("POST /api/adapters/start/{adapterId}", s.handleStartAdapter)
 	mux.HandleFunc("POST /api/adapters/stop/{adapterId}", s.handleStopAdapter)
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(staticDir, r.URL.Path)
+
+		_, err := os.Stat(path)
+
+		if os.IsNotExist(err) {
+			w.Header().Set("Content-Type", "text/html")
+			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+			return
+		} else if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.FileServer(http.Dir(staticDir)).ServeHTTP(w, r)
+	})
 
 	server := &http.Server{
 		Addr:    s.addr,
@@ -195,7 +217,10 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("Content-Type", "application/json")
+
+		if strings.HasPrefix(r.URL.Path, "/api") {
+			w.Header().Set("Content-Type", "application/json")
+		}
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)

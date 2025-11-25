@@ -4,3 +4,4 @@ bin/
 mosquitto/data
 mosquitto/log
 .env
+./dist
