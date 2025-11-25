@@ -1,26 +1,60 @@
-import { Activity, Bluetooth, Network, Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { CreateDeviceForm } from "./components/domain/device/CreateDeviceForm";
 import { useAdapters, useScanners, useDevices, useProtocols } from "./hooks/useDomain";
-import { DeviceList } from "./components/domain/device/DeviceList";
-import { Frame } from "./components/layouts/Frame";
+
 import { Header } from "./components/Header";
 import { FloatingButton } from "./components/atoms/FloatingButton";
-import { useModal } from "./hooks/useModal";
 import { Modal } from "./components/layouts/Modal";
-import { StateList } from "./components/domain/StateList";
-import { ScanBluetoothDevices } from "./components/domain/ScanBluetoothDevices";
 import { useState } from "react";
-
+import { WidgetGrid } from "./components/WidgetGrid";
+import { useWidgetLayout } from "./hooks/useWidgetLayout";
+import { WidgetManager } from "./components/WidgetManager";
+import DeviceDetails from "./components/domain/device/DeviceDetails";
+import type { Device } from "./types/device";
 
 
 const App = () => {
   const { adapters, adaptersLoading, adaptersError } = useAdapters();
-  const { scanners, scannersLoading, scannersError } = useScanners();
-  const { devices, createDevice, linkAdapter, unlinkAdapter, devicesLoading, devicesError } = useDevices();
+  const { scanners, scannersLoading, scannersError, startScanner, stopScanner } = useScanners();
+  const { devices, createDevice, linkAdapter, unlinkAdapter, devicesLoading, devicesError, deleteDevice } = useDevices();
   const { protocols } = useProtocols();
-  const { modalIsOpen, openModal, closeModal } = useModal();
-  const [selectedBluetoothDeviceMeta, setSelectedBluetoothDeviceMeta] = useState<{ name: string, address: string }>()
+  const { activeWidgets, activeWidgetIds, addWidget, removeWidget } = useWidgetLayout();
 
+  const [selectedBluetoothDeviceMeta, setSelectedBluetoothDeviceMeta] = useState<{ name: string, address: string }>()
+  const [isManagerOpen, setManagerOpen] = useState(false);
+  const [isDeviceCreationModalOpen, setDeviceCreationModalOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [isEditing, setEditing] = useState(false);
+
+
+  const widgetPropsMap = {
+    "bluetooth-scan": {
+      onConnect: (name: string, address: string) => {
+        setSelectedBluetoothDeviceMeta({ name, address });
+        setDeviceCreationModalOpen(true);
+      }
+    },
+    "scanner-list": {
+      objects: scanners,
+      objectName: "Scanner",
+      start: startScanner,
+      stop: stopScanner,
+      isLoading: scannersLoading
+    },
+    "adapter-list": {
+      objects: adapters,
+      objectName: "Adapter",
+      start: () => { },
+      stop: () => { },
+      isLoading: adaptersLoading
+    },
+    "device-list": {
+      devices: devices,
+      adapters: adapters,
+      onDeviceDelete: (d: Device) => { deleteDevice(d.id) },
+      onDeviceSelected: (d: Device) => { setSelectedDevice(d) }
+    }
+  };
 
   return (
     <>
@@ -34,47 +68,47 @@ const App = () => {
           scannersUnavailable={scannersLoading || scannersError != undefined}
         />
 
+        <div className="flex justify-end px-4 sm:px-6 lg:px-8 pt-4 gap-2">
+          <button
+            onClick={() => setEditing(!isEditing)}
+            className={`text-sm px-3 py-1 rounded border ${isEditing ? 'bg-yellow-100 border-yellow-300 text-yellow-800' : 'bg-white'}`}
+          >
+            {isEditing ? 'Back to view' : 'Organize'}
+          </button>
+
+          <button onClick={() => setManagerOpen(true)} className="text-gray-500 hover:text-primary-600">
+            <Settings />
+          </button>
+        </div>
+
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-5 grid-rows-[200px_200px_1fr] gap-4">
-            <div className="col-span-2">
-              <Frame icon={Activity} title="État des Scanners" padding>
-                <StateList objects={scanners} objectName="Scanner" />
-              </Frame>
-            </div>
-
-
-            <div className="col-span-2 col-start-1 row-start-2">
-              <Frame icon={Activity} title="État des Adapters" padding>
-                <StateList objects={adapters} objectName="Adapter" />
-              </Frame>
-            </div>
-
-            <div className="col-span-3 row-span-2 col-start-3 row-start-1">
-              <Frame icon={Bluetooth} title="Bluetooth Devices Around">
-                <ScanBluetoothDevices onConnect={(name: string, address: string) => {
-                  setSelectedBluetoothDeviceMeta({ name, address })
-                  openModal()
-                }} />
-              </Frame>
-            </div>
-
-            <div className="col-span-5 row-span-2 row-start-3">
-              <Frame icon={Network} title="Appareils connectés" padding>
-                <DeviceList
-                  adapters={adapters}
-                  devices={devices}
-                  onLink={linkAdapter}
-                  onUnlink={unlinkAdapter}
-                />
-              </Frame>
-
-            </div>
-          </div>
+          <WidgetGrid
+            widgets={activeWidgets}
+            propsMap={widgetPropsMap}
+            isEditing={isEditing}
+            onRemove={removeWidget}
+          />
         </main >
 
+
         <Modal
-          isOpen={modalIsOpen}
-          onClose={closeModal}
+          isOpen={isManagerOpen}
+          onClose={() => setManagerOpen(false)}
+          title="Manage widgets"
+          size="lg"
+        >
+          <WidgetManager
+            activeIds={activeWidgetIds}
+            onToggle={(id) => {
+              if (activeWidgetIds.includes(id)) removeWidget(id);
+              else addWidget(id);
+            }}
+          />
+        </Modal>
+
+        <Modal
+          isOpen={isDeviceCreationModalOpen}
+          onClose={() => setDeviceCreationModalOpen(false)}
           title="Add new device"
           size="xl"
         >
@@ -82,7 +116,7 @@ const App = () => {
             defaultData={selectedBluetoothDeviceMeta}
             onSubmit={(d) => {
               createDevice(d).then(() => {
-                closeModal()
+                setDeviceCreationModalOpen(false)
               })
             }}
             adapters={adapters}
@@ -90,9 +124,25 @@ const App = () => {
           />
         </Modal>
 
+        <Modal
+          isOpen={selectedDevice != null}
+          onClose={() => setSelectedDevice(null)}
+          title={selectedDevice?.name ?? "Device Details"}
+          size="full"
+        >
+          {
+            selectedDevice && <DeviceDetails
+              onLink={linkAdapter}
+              onUnlink={unlinkAdapter}
+              device={selectedDevice}
+              adapters={adapters}
+            />
+          }
+        </Modal>
+
         <FloatingButton onClick={() => {
           setSelectedBluetoothDeviceMeta(undefined)
-          openModal()
+          setDeviceCreationModalOpen(true)
         }}>
           <Plus />
         </FloatingButton>

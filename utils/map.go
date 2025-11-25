@@ -15,3 +15,11 @@ func MapEntries[K comparable, V any, T any](entries map[K]V, modifier func(K, V)
 	}
 	return list
 }
+
+func Values[K comparable, V any](entries map[K]V) []V {
+	list := make([]V, 0, len(entries))
+	for _, v := range entries {
+		list = append(list, v)
+	}
+	return list
+}

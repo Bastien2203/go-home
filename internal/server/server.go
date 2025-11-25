@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gohome/internal/core"
 	"gohome/internal/websockets"
+	"gohome/shared/types"
 	"log"
 	"net/http"
 )
@@ -40,9 +41,15 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /api/devices", s.handleListDevices)
 
 	mux.HandleFunc("POST /api/devices", s.handleCreateDevice)
+	mux.HandleFunc("DELETE /api/devices/{id}", s.handleDeleteDevice)
 
 	mux.HandleFunc("POST /api/devices/{id}/adapters/{adapterId}", s.handleLinkAdapter)
 	mux.HandleFunc("DELETE /api/devices/{id}/adapters/{adapterId}", s.handleUnlinkAdapter)
+
+	mux.HandleFunc("POST /api/scanners/start/{scannerId}", s.handleStartScanner)
+	mux.HandleFunc("POST /api/scanners/stop/{scannerId}", s.handleStopScanner)
+	mux.HandleFunc("POST /api/adapters/start/{adapterId}", s.handleStartAdapter)
+	mux.HandleFunc("POST /api/adapters/stop/{adapterId}", s.handleStopAdapter)
 
 	server := &http.Server{
 		Addr:    s.addr,
@@ -74,7 +81,7 @@ func (s *Server) handleListDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if devices == nil {
-		devices = []*core.Device{}
+		devices = []*types.Device{}
 	}
 	json.NewEncoder(w).Encode(devices)
 }
@@ -92,7 +99,7 @@ func (s *Server) handleCreateDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dev := core.NewDevice(req.Address, req.Name, req.Protocol, req.AdapterIDs, protocol.AddressType())
+	dev := types.NewDevice(req.Address, req.Name, req.Protocol, req.AdapterIDs, protocol.AddressType())
 	if err := s.kernel.RegisterDevice(dev); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to register device: %v", err), http.StatusInternalServerError)
 		return
@@ -100,6 +107,17 @@ func (s *Server) handleCreateDevice(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(dev)
+}
+
+func (s *Server) handleDeleteDevice(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.PathValue("id")
+
+	if err := s.kernel.UnregisterDevice(deviceID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "deleted"}`))
 }
 
 func (s *Server) handleLinkAdapter(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +142,50 @@ func (s *Server) handleUnlinkAdapter(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status": "unlinked"}`))
+}
+
+func (s *Server) handleStartScanner(w http.ResponseWriter, r *http.Request) {
+	scannerID := r.PathValue("scannerId")
+
+	if err := s.kernel.StartScanner(scannerID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "started"}`))
+}
+
+func (s *Server) handleStopScanner(w http.ResponseWriter, r *http.Request) {
+	scannerID := r.PathValue("scannerId")
+
+	if err := s.kernel.StopScanner(scannerID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "stopped"}`))
+}
+
+func (s *Server) handleStartAdapter(w http.ResponseWriter, r *http.Request) {
+	adapterId := r.PathValue("adapterId")
+
+	if err := s.kernel.StartAdapter(adapterId); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "started"}`))
+}
+
+func (s *Server) handleStopAdapter(w http.ResponseWriter, r *http.Request) {
+	adapterId := r.PathValue("adapterId")
+
+	if err := s.kernel.StopAdapter(adapterId); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "stopped"}`))
 }
 
 // --- Middleware ---

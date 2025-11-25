@@ -18,7 +18,7 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
   const [formData, setFormData] = useState({
     name: props.defaultData?.name ?? "",
     address: props.defaultData?.address ?? "",
-    protocol: "",
+    protocol: props.protocols.length > 0 ? props.protocols[0].id : "",
     adapter_ids: [] as string[],
   });
 

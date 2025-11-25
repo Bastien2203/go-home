@@ -1,3 +1,6 @@
 homekit_data/
 ./gohome.db
 bin/
+mosquitto/data
+mosquitto/log
+.env

@@ -1,7 +1,9 @@
 package protocols
 
 import (
-	"gohome/internal/core"
+	"encoding/json"
+	"fmt"
+	"gohome/shared/types"
 )
 
 type HttpParser struct{}
@@ -10,8 +12,8 @@ func NewHttpParser() *HttpParser {
 	return &HttpParser{}
 }
 
-func (d *HttpParser) AddressType() core.AddressType {
-	return core.BasicAddress
+func (d *HttpParser) AddressType() types.AddressType {
+	return types.BasicAddress
 }
 
 func (s *HttpParser) ID() string {
@@ -22,6 +24,10 @@ func (d *HttpParser) Name() string {
 	return "Http"
 }
 
-func (d *HttpParser) Parse(rawData any) ([]*core.Capability, error) {
-	return rawData.([]*core.Capability), nil
+func (d *HttpParser) Parse(rawData []byte) ([]*types.Capability, error) {
+	var capabilities []*types.Capability
+	if err := json.Unmarshal(rawData, &capabilities); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal to capabilities: %w", err)
+	}
+	return capabilities, nil
 }

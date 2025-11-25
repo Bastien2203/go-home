@@ -39,7 +39,7 @@ func (c *Client) readPump() {
 		switch msg.Action {
 		case "subscribe":
 			c.hub.Subscribe(c, msg.Topic)
-			log.Printf("Client subscribed to : %s", msg.Topic)
+			// log.Printf("Client subscribed to : %s", msg.Topic)
 
 		case "publish":
 			c.hub.broadcast <- &msg

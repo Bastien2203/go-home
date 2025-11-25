@@ -24,7 +24,7 @@ export const Header = (props: {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-gray-900 leading-tight">
-                GoHome <span className="text-primary-600">Control</span>
+                GoHome
               </h1>
 
             </div>

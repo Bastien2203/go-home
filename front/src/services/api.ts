@@ -1,4 +1,7 @@
-import type { Adapter, Device, DeviceCreateRequest, Protocol, Scanner } from "../types/device";
+import type { Adapter } from "../types/adapter";
+import type { Device, DeviceCreateRequest } from "../types/device";
+import type { Protocol } from "../types/protocol";
+import type { Scanner } from "../types/scanner";
 
 export class ApiService {
   private baseUrl: string;
@@ -12,8 +15,11 @@ export class ApiService {
     this.getProtocols = this.getProtocols.bind(this);
     this.getDevices = this.getDevices.bind(this);
     this.createDevice = this.createDevice.bind(this);
+    this.deleteDevice = this.deleteDevice.bind(this);
     this.linkDeviceToAdapter = this.linkDeviceToAdapter.bind(this);
     this.unlinkDeviceFromAdapter = this.unlinkDeviceFromAdapter.bind(this);
+    this.startScanner = this.startScanner.bind(this)
+    this.stopScanner = this.stopScanner.bind(this)
   }
 
   private async getJson<T>(path: string): Promise<T> {
@@ -59,12 +65,24 @@ export class ApiService {
     return this.post<Device>("/devices", req);
   }
 
+  async deleteDevice(id: string): Promise<void> {
+    return this.delete(`/devices/${id}`);
+  }
+
   async linkDeviceToAdapter(deviceId: string, adapterId: string): Promise<void> {
     return this.post(`/devices/${deviceId}/adapters/${adapterId}`, {});
   }
 
   async unlinkDeviceFromAdapter(deviceId: string, adapterId: string): Promise<void> {
     return this.delete(`/devices/${deviceId}/adapters/${adapterId}`);
+  }
+
+  async startScanner(id: string): Promise<void> {
+    return this.post(`/scanners/start/${id}`, {});
+  }
+
+   async stopScanner(id: string): Promise<void> {
+    return this.post(`/scanners/stop/${id}`, {});
   }
 }
 

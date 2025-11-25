@@ -1,49 +1,55 @@
 package core
 
 import (
-	"context"
 	"fmt"
-	"gohome/internal/events"
+	"os"
+	"os/exec"
+	"path/filepath"
+
+	"gohome/shared/events"
+	"gohome/shared/plugin"
+	"gohome/shared/types"
+
 	"log"
 	"sort"
 	"sync"
 )
 
 type Kernel struct {
-	eventBus   *events.EventBus
-	repository DeviceRepository
-	adapters   map[string]Adapter
-	protocols  map[string]Protocol
-	scanners   map[string]Scanner
-	mu         map[string]*sync.Mutex
-	muLock     sync.Mutex
+	eventBus      *events.EventBus
+	repository    DeviceRepository
+	protocols     map[string]types.Protocol
+	mu            map[string]*sync.Mutex
+	muLock        sync.Mutex
+	pluginManager *PluginManager
+	processes     map[string]*exec.Cmd
+	pMu           sync.Mutex
 }
 
-func NewKernel(eventBus *events.EventBus, repository DeviceRepository) *Kernel {
+func NewKernel(eventBus *events.EventBus, repository DeviceRepository) (*Kernel, error) {
+	pluginManager, err := NewPluginManager(eventBus)
+	if err != nil {
+		return nil, err
+	}
 	kernel := &Kernel{
-		eventBus:   eventBus,
-		repository: repository,
-		adapters:   make(map[string]Adapter),
-		protocols:  make(map[string]Protocol),
-		scanners:   make(map[string]Scanner),
-		mu:         make(map[string]*sync.Mutex),
+		eventBus:      eventBus,
+		repository:    repository,
+		protocols:     make(map[string]types.Protocol),
+		mu:            make(map[string]*sync.Mutex),
+		pluginManager: pluginManager,
+		processes:     make(map[string]*exec.Cmd),
 	}
 
-	eventBus.Subscribe(events.RawDataReceived, kernel.handleStateUpdate)
+	if err := events.Subscribe(eventBus, events.RawDataReceived, kernel.handleStateUpdate); err != nil {
+		return nil, err
+	}
 
-	return kernel
+	return kernel, nil
 }
 
-func (k *Kernel) handleStateUpdate(event events.Event) {
-	rawData, ok := event.Payload.(*RawData)
-	if !ok {
-		log.Printf("[Kernel] (handleStateUpdate) Invalid state update payload")
-		return
-	}
-
+func (k *Kernel) handleStateUpdate(rawData types.RawData) {
 	device, err := k.repository.FindByAddress(rawData.Address, rawData.AddressType)
 	if err != nil || device == nil {
-		// log.Printf("[Kernel] (handleStateUpdate) Unknown device for state update: %s", rawData.DeviceID)
 		return
 	}
 
@@ -73,20 +79,21 @@ func (k *Kernel) handleStateUpdate(event events.Event) {
 	}
 
 	for _, adapterID := range device.AdapterIDs {
-		if adapter, exists := k.adapters[adapterID]; exists {
-			go func(adapter Adapter) {
-				for _, c := range deviceData {
-					if err := adapter.OnDeviceData(&DeviceStateUpdate{
+		go func(adapterID string) {
+			for _, c := range deviceData {
+				k.eventBus.Publish(events.Event{
+					Type: events.UpdateDataForAdapter(adapterID),
+					Payload: types.DeviceStateUpdate{
 						DeviceID:       device.ID,
+						DeviceName:     device.Name,
+						DeviceProtocol: device.Protocol,
 						CapabilityType: c.Name,
 						Timestamp:      rawData.Timestamp,
 						Value:          c.Value,
-					}); err != nil {
-						log.Printf("[Kernel] (handleStateUpdate) Error sending data to adapter %s: %v", adapter.ID(), err)
-					}
-				}
-			}(adapter)
-		}
+					},
+				})
+			}
+		}(adapterID)
 	}
 }
 
@@ -99,90 +106,154 @@ func (k *Kernel) getMutex(deviceID string) *sync.Mutex {
 	return k.mu[deviceID]
 }
 
-func (k *Kernel) Stop() {
-	k.StopScanners()
-	k.StopAdapters()
+func (k *Kernel) deleteMutex(deviceID string) {
+	k.muLock.Lock()
+	defer k.muLock.Unlock()
+	delete(k.mu, deviceID)
+}
+
+func (k *Kernel) LoadPlugins(dir string) error {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		info, err := f.Info()
+		if err == nil {
+			if info.Mode()&0111 == 0 {
+				log.Printf("Ignore file %s: non executable", f.Name())
+				continue
+			}
+		}
+
+		fileName := f.Name()
+		fullPath := filepath.Join(dir, fileName)
+
+		cmd := exec.Command(fullPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		k.pMu.Lock()
+		k.processes[fileName] = cmd
+		k.pMu.Unlock()
+
+		go func(name string, c *exec.Cmd) {
+			defer func() {
+				k.pMu.Lock()
+				delete(k.processes, name)
+				k.pMu.Unlock()
+			}()
+
+			log.Printf("[%s] Starting...", name)
+			if err := c.Run(); err != nil {
+				log.Printf("[%s] Stopped or Error: %v", name, err)
+				return
+			}
+			log.Printf("[%s] Finished naturally", name)
+		}(fileName, cmd)
+	}
+	return nil
+}
+
+func (k *Kernel) UnloadPlugins() {
+	k.pMu.Lock()
+	defer k.pMu.Unlock()
+
+	log.Println("Unloading all plugins...")
+
+	for name, cmd := range k.processes {
+		if cmd.Process != nil {
+			log.Printf("Signaling %s to stop...", name)
+			err := cmd.Process.Signal(os.Interrupt)
+
+			if err != nil {
+				log.Printf("Failed to kill %s: %v", name, err)
+			}
+		}
+	}
 }
 
 // --- Scanners Management ---
 
-func (k *Kernel) RegisterScanner(scanner Scanner, ctx context.Context) error {
-	k.scanners[scanner.ID()] = scanner
-
-	if err := scanner.Start(ctx); err != nil {
-		return err
-	}
-	log.Printf("[Kernel] Scanner registered: %s", scanner.ID())
-	return nil
+func (k *Kernel) ListScanners() []*plugin.Plugin {
+	scanners := k.pluginManager.GetPluginsByType(plugin.PluginScanner)
+	sort.Slice(scanners, func(i, j int) bool {
+		return scanners[i].ID < scanners[j].ID
+	})
+	return scanners
 }
 
-func (k *Kernel) ListScanners() []map[string]any {
-	list := make([]map[string]any, 0, len(k.scanners))
-	for _, scanner := range k.scanners {
-		list = append(list, map[string]any{
-			"id":    scanner.ID(),
-			"name":  scanner.Name(),
-			"state": scanner.State(),
-		})
+func (k *Kernel) StopScanner(id string) error {
+	plugin, err := k.pluginManager.GetPluginById(plugin.PluginScanner, id)
+	if err != nil {
+		return err
 	}
 
-	sort.Slice(list, func(i, j int) bool {
-		return list[i]["id"].(string) < list[j]["id"].(string)
-	})
+	return k.pluginManager.StopPlugin(plugin)
+}
 
-	return list
+func (k *Kernel) StartScanner(id string) error {
+	plugin, err := k.pluginManager.GetPluginById(plugin.PluginScanner, id)
+	if err != nil {
+		return err
+	}
+
+	return k.pluginManager.StartPlugin(plugin)
 }
 
 func (k *Kernel) StopScanners() {
-	for _, scanner := range k.scanners {
-		if err := scanner.Stop(); err != nil {
-			log.Printf("[Kernel] Error stopping scanner %s: %v", scanner.ID(), err)
-		} else {
-			log.Printf("[Kernel] Scanner stopped: %s", scanner.ID())
+	scanners := k.pluginManager.GetPluginsByType(plugin.PluginScanner)
+	for _, scanner := range scanners {
+		if err := k.pluginManager.StopPlugin(scanner); err != nil {
+			log.Printf("error stoppig scanner : %v", err)
 		}
 	}
 }
 
 // --- Adapters Management ---
 
-func (ds *Kernel) RegisterAdapter(adapter Adapter) error {
-	if err := adapter.Start(); err != nil {
-		return err
-	}
-	ds.adapters[adapter.ID()] = adapter
-	log.Printf("[Kernel] Adapter registered: %s", adapter.ID())
-	return nil
+func (k *Kernel) ListAdapters() []*plugin.Plugin {
+	adapters := k.pluginManager.GetPluginsByType(plugin.PluginAdapter)
+	sort.Slice(adapters, func(i, j int) bool {
+		return adapters[i].ID < adapters[j].ID
+	})
+	return adapters
 }
 
-func (k *Kernel) ListAdapters() []map[string]any {
-	list := make([]map[string]any, 0, len(k.adapters))
-	for _, adapter := range k.adapters {
-		list = append(list, map[string]any{
-			"id":    adapter.ID(),
-			"name":  adapter.Name(),
-			"state": adapter.State(),
-		})
+func (k *Kernel) StopAdapter(id string) error {
+	plugin, err := k.pluginManager.GetPluginById(plugin.PluginAdapter, id)
+	if err != nil {
+		return err
 	}
 
-	sort.Slice(list, func(i, j int) bool {
-		return list[i]["id"].(string) < list[j]["id"].(string)
-	})
-	return list
+	return k.pluginManager.StopPlugin(plugin)
+}
+
+func (k *Kernel) StartAdapter(id string) error {
+	plugin, err := k.pluginManager.GetPluginById(plugin.PluginAdapter, id)
+	if err != nil {
+		return err
+	}
+
+	return k.pluginManager.StartPlugin(plugin)
 }
 
 func (k *Kernel) StopAdapters() {
-	for _, adapter := range k.adapters {
-		if err := adapter.Stop(); err != nil {
-			log.Printf("[Kernel] Error stopping adapter %s: %v", adapter.ID(), err)
-		} else {
-			log.Printf("[Kernel] Adapter stopped: %s", adapter.ID())
+	adapters := k.pluginManager.GetPluginsByType(plugin.PluginAdapter)
+	for _, adapter := range adapters {
+		if err := k.pluginManager.StopPlugin(adapter); err != nil {
+			log.Printf("error stoppig adapter : %v", err)
 		}
 	}
 }
 
 // --- Protocols Management ---
 
-func (k *Kernel) RegisterProtocol(protocol Protocol) {
+func (k *Kernel) RegisterProtocol(protocol types.Protocol) {
 	k.protocols[protocol.ID()] = protocol
 	log.Printf("[Kernel] Protocol registered: %s", protocol.ID())
 }
@@ -202,7 +273,7 @@ func (k *Kernel) ListProtocols() []map[string]any {
 	return list
 }
 
-func (k *Kernel) GetProtocol(id string) (Protocol, error) {
+func (k *Kernel) GetProtocol(id string) (types.Protocol, error) {
 	protocol, exists := k.protocols[id]
 	if !exists {
 		return nil, fmt.Errorf("protocol not found: %s", id)
@@ -212,8 +283,7 @@ func (k *Kernel) GetProtocol(id string) (Protocol, error) {
 
 // --- Devices Management ---
 
-func (k *Kernel) RegisterDevice(device *Device) error {
-	// Sauvegarde initiale
+func (k *Kernel) RegisterDevice(device *types.Device) error {
 	if err := k.repository.Save(device); err != nil {
 		return err
 	}
@@ -221,7 +291,6 @@ func (k *Kernel) RegisterDevice(device *Device) error {
 
 	log.Printf("[Kernel] Device registered: %s (ID: %s)", device.Name, device.ID)
 
-	// Auto-link
 	for _, adapterID := range device.AdapterIDs {
 		if err := k.LinkDeviceToAdapter(device.ID, adapterID); err != nil {
 			log.Printf("[Kernel] Warning: Failed to link adapter %s: %v", adapterID, err)
@@ -230,11 +299,33 @@ func (k *Kernel) RegisterDevice(device *Device) error {
 	return nil
 }
 
-func (ds *Kernel) GetDevice(deviceID string) (*Device, error) {
+func (k *Kernel) UnregisterDevice(deviceId string) error {
+	device, err := k.repository.FindByID(deviceId)
+	if err != nil {
+		return fmt.Errorf("device doesnt exists : %v", err)
+	}
+
+	for _, adapterID := range device.AdapterIDs {
+		if err := k.UnlinkDeviceFromAdapter(device.ID, adapterID); err != nil {
+			log.Printf("[Kernel] Warning: Failed to link adapter %s: %v", adapterID, err)
+		}
+	}
+
+	if err := k.repository.Delete(device.ID); err != nil {
+		return err
+	}
+	k.deleteMutex(device.ID)
+
+	log.Printf("[Kernel] Device unregistered: %s (ID: %s)", device.Name, device.ID)
+
+	return nil
+}
+
+func (ds *Kernel) GetDevice(deviceID string) (*types.Device, error) {
 	return ds.repository.FindByID(deviceID)
 }
 
-func (ds *Kernel) ListDevices() ([]*Device, error) {
+func (ds *Kernel) ListDevices() ([]*types.Device, error) {
 	return ds.repository.FindAll()
 }
 
@@ -245,8 +336,9 @@ func (k *Kernel) LinkDeviceToAdapter(deviceID, adapterID string) error {
 	if err != nil || device == nil {
 		return fmt.Errorf("device not found: %s", deviceID)
 	}
-	adapter, exists := k.adapters[adapterID]
-	if !exists {
+
+	adapter, err := k.pluginManager.GetPluginById(plugin.PluginAdapter, adapterID)
+	if err != nil {
 		return fmt.Errorf("adapter not found: %s", adapterID)
 	}
 
@@ -254,7 +346,11 @@ func (k *Kernel) LinkDeviceToAdapter(deviceID, adapterID string) error {
 		return err
 	}
 
-	return adapter.OnDeviceRegistered(device)
+	k.eventBus.Publish(events.Event{
+		Type:    events.RegisterDeviceForAdapter(adapter.ID),
+		Payload: device,
+	})
+	return nil
 }
 
 func (k *Kernel) UnlinkDeviceFromAdapter(deviceID, adapterID string) error {
@@ -262,8 +358,9 @@ func (k *Kernel) UnlinkDeviceFromAdapter(deviceID, adapterID string) error {
 	if err != nil || device == nil {
 		return fmt.Errorf("device not found: %s", deviceID)
 	}
-	adapter, exists := k.adapters[adapterID]
-	if !exists {
+
+	adapter, err := k.pluginManager.GetPluginById(plugin.PluginAdapter, adapterID)
+	if err != nil {
 		return fmt.Errorf("adapter not found: %s", adapterID)
 	}
 
@@ -271,5 +368,9 @@ func (k *Kernel) UnlinkDeviceFromAdapter(deviceID, adapterID string) error {
 		return err
 	}
 
-	return adapter.OnDeviceUnregistered(device)
+	k.eventBus.Publish(events.Event{
+		Type:    events.UnregisterDeviceForAdapter(adapter.ID),
+		Payload: device,
+	})
+	return nil
 }

@@ -9,7 +9,18 @@ export function useAdapters() {
 
 export function useScanners() {
   const h = useApi(api.getScanners);
-  return { scanners: h.data || [], scannersLoading: h.loading, scannersError: h.error };
+
+  const startScanner = async (id: string) => {
+    await api.startScanner(id)
+    h.refresh()
+  }
+
+  const stopScanner = async (id: string) => {
+    await api.stopScanner(id)
+    h.refresh()
+  }
+
+  return { scanners: h.data || [], scannersLoading: h.loading, scannersError: h.error, startScanner, stopScanner};
 }
 
 export function useProtocols() {
@@ -35,6 +46,11 @@ export function useDevices() {
     h.refresh();
   };
 
+  const deleteDevice = async (deviceId: string) => {
+    await api.deleteDevice(deviceId);
+    h.refresh();
+  };
+
   return {
     devices: h.data || [],
     devicesLoading: h.loading,
@@ -43,5 +59,6 @@ export function useDevices() {
     createDevice: create,
     linkAdapter: link,
     unlinkAdapter: unlink,
+    deleteDevice: deleteDevice,
   };
 }

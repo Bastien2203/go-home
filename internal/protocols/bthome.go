@@ -1,15 +1,16 @@
 package protocols
 
 import (
+	"encoding/json"
 	"fmt"
-	"gohome/internal/core"
+	"gohome/shared/types"
 	"log"
 
 	"github.com/Bastien2203/bthomev2"
 	"tinygo.org/x/bluetooth"
 )
 
-var serviceDataUUID = bluetooth.New16BitUUID(uint16(bthomev2.ServiceDataUUID))
+var serviceDataUUID = bluetooth.New16BitUUID(uint16(bthomev2.ServiceDataUUID)).String()
 
 type BthomeParser struct{}
 
@@ -17,8 +18,8 @@ func NewBthomeParser() *BthomeParser {
 	return &BthomeParser{}
 }
 
-func (d *BthomeParser) AddressType() core.AddressType {
-	return core.BLEAddress
+func (d *BthomeParser) AddressType() types.AddressType {
+	return types.BLEAddress
 }
 
 func (s *BthomeParser) ID() string {
@@ -29,9 +30,10 @@ func (d *BthomeParser) Name() string {
 	return "BTHome"
 }
 
-func (d *BthomeParser) Parse(rawData any) ([]*core.Capability, error) {
-	bluetoothAdv, ok := rawData.(core.BluetoothAdvertisement)
-	if !ok {
+func (d *BthomeParser) Parse(rawData []byte) ([]*types.Capability, error) {
+	var bluetoothAdv types.BluetoothAdvertisement
+
+	if err := json.Unmarshal(rawData, &bluetoothAdv); err != nil {
 		return nil, fmt.Errorf("invalid advertisement type")
 	}
 
@@ -46,36 +48,36 @@ func (d *BthomeParser) Parse(rawData any) ([]*core.Capability, error) {
 		return nil, fmt.Errorf("error while parsing service data: %w", err)
 	}
 
-	capabilities := make([]*core.Capability, 0)
+	capabilities := make([]*types.Capability, 0)
 	for _, m := range data {
 		switch v := m.Value.(type) {
 		case bthomev2.NumberValue:
-			capabilities = append(capabilities, &core.Capability{
-				Name:  core.CapabilityType(m.Property),
+			capabilities = append(capabilities, &types.Capability{
+				Name:  types.CapabilityType(m.Property),
 				Value: v.Number,
-				Type:  core.TypeFloat,
-				Unit:  core.UnitFromBthome(m.Unit),
+				Type:  types.TypeFloat,
+				Unit:  types.UnitFromBthome(m.Unit),
 			})
 		case bthomev2.BinaryValue:
-			capabilities = append(capabilities, &core.Capability{
-				Name:  core.CapabilityType(m.Property),
+			capabilities = append(capabilities, &types.Capability{
+				Name:  types.CapabilityType(m.Property),
 				Value: v.Boolean,
-				Type:  core.TypeBool,
-				Unit:  core.UnitFromBthome(m.Unit),
+				Type:  types.TypeBool,
+				Unit:  types.UnitFromBthome(m.Unit),
 			})
 		case bthomev2.TextValue:
-			capabilities = append(capabilities, &core.Capability{
-				Name:  core.CapabilityType(m.Property),
+			capabilities = append(capabilities, &types.Capability{
+				Name:  types.CapabilityType(m.Property),
 				Value: v.Text,
-				Type:  core.TypeString,
-				Unit:  core.UnitFromBthome(m.Unit),
+				Type:  types.TypeString,
+				Unit:  types.UnitFromBthome(m.Unit),
 			})
 		case bthomev2.RawValue:
-			capabilities = append(capabilities, &core.Capability{
-				Name:  core.CapabilityType(m.Property),
+			capabilities = append(capabilities, &types.Capability{
+				Name:  types.CapabilityType(m.Property),
 				Value: v.Raw,
-				Type:  core.TypeBytes,
-				Unit:  core.UnitFromBthome(m.Unit),
+				Type:  types.TypeBytes,
+				Unit:  types.UnitFromBthome(m.Unit),
 			})
 		}
 	}
