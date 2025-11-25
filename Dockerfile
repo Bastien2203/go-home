@@ -18,7 +18,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o /app/core cmd/.
+RUN CGO_ENABLED=1 GOOS=linux go build -o /app/core .
 
 RUN mkdir -p /app/bin
 
