@@ -48,10 +48,14 @@ func (s *BluetoothScanner) scanLoop() {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[Bluetooth Scanner] Panic: %v", r)
+			_ = s.adapter.StopScan()
 			s.onStateChange(types.StateStopped)
 			s.started = false
 		}
 	}()
+
+	_ = s.adapter.StopScan()
+	time.Sleep(500 * time.Millisecond)
 
 	log.Println("[Bluetooth Scanner] Started")
 
