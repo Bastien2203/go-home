@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"os"
 
 	"log"
 
@@ -10,10 +11,16 @@ import (
 )
 
 func LoadFromEnv(ctx context.Context) *Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	env := os.Getenv("ENV")
+
+	// No .env file for production
+	if env != "PROD" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
+
 	cfg := &Config{}
 	if err := envconfig.Process(ctx, cfg); err != nil {
 		log.Fatalf("%+v\n", err)

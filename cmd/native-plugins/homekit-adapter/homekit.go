@@ -24,15 +24,16 @@ type HomekitAdapter struct {
 	bridge      *accessory.Bridge
 
 	// Server & Concurrency Control
-	server        *hap.Server
-	serverStop    context.CancelFunc
-	mu            sync.Mutex
-	restartTimer  *time.Timer
-	adapterState  types.State
-	onStateChange func(state types.State)
+	server         *hap.Server
+	serverStop     context.CancelFunc
+	mu             sync.Mutex
+	restartTimer   *time.Timer
+	adapterState   types.State
+	onStateChange  func(state types.State)
+	homekitDataDir string
 }
 
-func NewHomeKitAdapter(eventBus *events.EventBus, onStateChange func(state types.State)) (*HomekitAdapter, error) {
+func NewHomeKitAdapter(eventBus *events.EventBus, onStateChange func(state types.State), homekitDataDir string) (*HomekitAdapter, error) {
 	info := accessory.Info{
 		Name:         "GoHome Hub",
 		SerialNumber: "GOHOME-HUB-001",
@@ -43,11 +44,12 @@ func NewHomeKitAdapter(eventBus *events.EventBus, onStateChange func(state types
 	bridge := accessory.NewBridge(info)
 
 	a := &HomekitAdapter{
-		accessories:   make(map[string]*accessory.A),
-		knownCaps:     make(map[string]map[types.CapabilityType]bool),
-		bridge:        bridge,
-		adapterState:  types.StateStopped,
-		onStateChange: onStateChange,
+		accessories:    make(map[string]*accessory.A),
+		knownCaps:      make(map[string]map[types.CapabilityType]bool),
+		bridge:         bridge,
+		adapterState:   types.StateStopped,
+		onStateChange:  onStateChange,
+		homekitDataDir: homekitDataDir,
 	}
 
 	if err := events.Subscribe(eventBus, events.UpdateDataForAdapter(p.ID), a.onDeviceData); err != nil {
@@ -273,7 +275,7 @@ func (h *HomekitAdapter) reloadServer() error {
 		return nil
 	}
 
-	fs := hap.NewFsStore("./homekit_data")
+	fs := hap.NewFsStore(h.homekitDataDir)
 
 	server, err := hap.NewServer(fs, h.bridge.A, accs...)
 	if err != nil {

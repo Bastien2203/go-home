@@ -26,7 +26,7 @@ func main() {
 	}
 
 	client := plugin.NewPluginClient(p, eventBus)
-	adapter, err := NewHomeKitAdapter(eventBus, client.EmitNewState)
+	adapter, err := NewHomeKitAdapter(eventBus, client.EmitNewState, "./homekit_data")
 	if err != nil {
 		log.Fatalf("Error creating homekit adapter : %v", err)
 	}
