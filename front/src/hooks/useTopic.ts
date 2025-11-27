@@ -9,7 +9,7 @@ export const useTopic = <T> (topic: Topic, onMessage: (msg: T) => void) => {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(WS_HOST);
+    const ws = new WebSocket(`${WS_HOST}/ws`);
     socketRef.current = ws;
 
     ws.onopen = () => {
