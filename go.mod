@@ -8,7 +8,9 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/sethvargo/go-envconfig v1.3.0
 	tinygo.org/x/bluetooth v0.10.1-0.20250105094942-376e2b9b1d4e
 )
 
@@ -17,10 +19,8 @@ require (
 	github.com/go-chi/chi v1.5.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/miekg/dns v1.1.61 // indirect
 	github.com/saltosystems/winrt-go v0.0.0-20240509164145-4f7860a3bd2b // indirect
-	github.com/sethvargo/go-envconfig v1.3.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/soypat/cyw43439 v0.0.0-20241116210509-ae1ce0e084c5 // indirect
 	github.com/soypat/seqs v0.0.0-20240527012110-1201bab640ef // indirect
