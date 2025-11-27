@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Topic } from '../types/topics';
 
 const env = import.meta.env.VITE_APP_ENV;
-const WS_HOST = env == "production" ? `ws://${document.location.hostname}` : "ws://localhost:8080";
+const WS_HOST = env == "production" ? `ws://${document.location.hostname}:${document.location.port}` : "ws://localhost:8080";
 
 export const useTopic = <T> (topic: Topic, onMessage: (msg: T) => void) => {
   const [isConnected, setIsConnected] = useState(false);
