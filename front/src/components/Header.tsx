@@ -3,6 +3,7 @@ import StatusBadge from "./atoms/StatusBadge";
 import type { Adapter } from "../types/adapter";
 import type { Device } from "../types/device";
 import type { Scanner } from "../types/scanner";
+import { api } from "../services/api";
 
 
 export const Header = (props: {
@@ -36,6 +37,10 @@ export const Header = (props: {
             <StatusBadge icon={<Radio size={16} />} label="Scanners" count={props.scanners.length} active={isSystemScanning} noCount={props.scannersUnavailable} />
             <StatusBadge icon={<Database size={16} />} label="Appareils" count={props.devices.length} noCount={props.devicesUnavailable} />
           </div>
+          <button className="flex" onClick={() => {
+              api.logout()
+              document.location.reload()
+            }}>logout</button>
         </div>
       </header>
 }

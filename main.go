@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gohome/internal/core"
-	devicerepository "gohome/internal/repository/device"
+	"gohome/internal/repository"
 
 	"gohome/shared/config"
 	"gohome/shared/events"
@@ -38,15 +38,20 @@ func main() {
 
 	defer eventBus.Close()
 
-	db, err := devicerepository.SetupSQLiteDB(cfg.SqliteDbPath)
+	db, err := repository.SetupSQLiteDB(cfg.SqliteDbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	deviceRepo, err := devicerepository.NewSQLiteDeviceRepository(db)
+	deviceRepo, err := repository.NewDeviceRepository(db)
 	if err != nil {
-		log.Fatalf("Error init sqlite repo: %v", err)
+		log.Fatalf("Error init sqlite device repo: %v", err)
+	}
+
+	userRepo, err := repository.NewUserRepository(db)
+	if err != nil {
+		log.Fatalf("Error init sqlite users repo: %v", err)
 	}
 	kernel, err := core.NewKernel(eventBus, deviceRepo)
 	if err != nil {
@@ -58,7 +63,7 @@ func main() {
 
 	wsHub := websockets.NewHub()
 	go wsHub.Run()
-	apiServer := server.NewServer(kernel, cfg.ApiPort, wsHub)
+	apiServer := server.NewServer(kernel, cfg.ApiPort, cfg.SessionSecret, cfg.AppEnv, wsHub, userRepo)
 	go func() {
 		if err := apiServer.Start(); err != nil {
 			log.Printf("Server error: %v", err)

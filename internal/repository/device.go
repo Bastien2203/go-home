@@ -1,4 +1,4 @@
-package devicerepository
+package repository
 
 import (
 	"database/sql"
@@ -10,25 +10,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type SQLiteDeviceRepository struct {
+type DeviceRepository struct {
 	db *sql.DB
 }
 
-func SetupSQLiteDB(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
-func NewSQLiteDeviceRepository(db *sql.DB) (*SQLiteDeviceRepository, error) {
+func NewDeviceRepository(db *sql.DB) (*DeviceRepository, error) {
 	query := `
 	CREATE TABLE IF NOT EXISTS devices (
 		id TEXT PRIMARY KEY,
@@ -48,16 +34,16 @@ func NewSQLiteDeviceRepository(db *sql.DB) (*SQLiteDeviceRepository, error) {
 		return nil, fmt.Errorf("failed to create devices table: %w", err)
 	}
 
-	return &SQLiteDeviceRepository{db: db}, nil
+	return &DeviceRepository{db: db}, nil
 }
 
-func (r *SQLiteDeviceRepository) Delete(deviceId string) error {
+func (r *DeviceRepository) Delete(deviceId string) error {
 	query := `DELETE FROM devices WHERE id = ?`
 	_, err := r.db.Exec(query, deviceId)
 	return err
 }
 
-func (r *SQLiteDeviceRepository) Save(device *types.Device) error {
+func (r *DeviceRepository) Save(device *types.Device) error {
 	adapterIDsJson, err := json.Marshal(device.AdapterIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal adapter_ids: %w", err)
@@ -93,14 +79,14 @@ func (r *SQLiteDeviceRepository) Save(device *types.Device) error {
 	return nil
 }
 
-func (r *SQLiteDeviceRepository) FindByID(id string) (*types.Device, error) {
+func (r *DeviceRepository) FindByID(id string) (*types.Device, error) {
 	query := `SELECT id, address, address_type, name, protocol, adapter_ids, created_at, capabilities, last_updated FROM devices WHERE id = ?`
 
 	row := r.db.QueryRow(query, id)
 	return r.scanDevice(row)
 }
 
-func (r *SQLiteDeviceRepository) FindAll() ([]*types.Device, error) {
+func (r *DeviceRepository) FindAll() ([]*types.Device, error) {
 	query := `SELECT id, address, address_type, name, protocol, adapter_ids, created_at, capabilities, last_updated FROM devices ORDER BY id`
 
 	rows, err := r.db.Query(query)
@@ -120,14 +106,14 @@ func (r *SQLiteDeviceRepository) FindAll() ([]*types.Device, error) {
 	return devices, nil
 }
 
-func (r *SQLiteDeviceRepository) FindByAddress(address string, addressType types.AddressType) (*types.Device, error) {
+func (r *DeviceRepository) FindByAddress(address string, addressType types.AddressType) (*types.Device, error) {
 	query := `SELECT id, address, address_type, name, protocol, adapter_ids, created_at, capabilities, last_updated FROM devices WHERE address = ? AND address_type = ?`
 
 	row := r.db.QueryRow(query, address, addressType)
 	return r.scanDevice(row)
 }
 
-func (r *SQLiteDeviceRepository) LinkAdapter(deviceID, adapterID string) error {
+func (r *DeviceRepository) LinkAdapter(deviceID, adapterID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -158,7 +144,7 @@ func (r *SQLiteDeviceRepository) LinkAdapter(deviceID, adapterID string) error {
 	return tx.Commit()
 }
 
-func (r *SQLiteDeviceRepository) UnlinkAdapter(deviceID, adapterID string) error {
+func (r *DeviceRepository) UnlinkAdapter(deviceID, adapterID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -187,11 +173,7 @@ func (r *SQLiteDeviceRepository) UnlinkAdapter(deviceID, adapterID string) error
 	return tx.Commit()
 }
 
-type Scanner interface {
-	Scan(dest ...any) error
-}
-
-func (r *SQLiteDeviceRepository) scanDevice(row Scanner) (*types.Device, error) {
+func (r *DeviceRepository) scanDevice(row Scanner) (*types.Device, error) {
 	var d types.Device
 	var adapterIDsJson []byte
 	var capabilitiesJson []byte
