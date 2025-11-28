@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"gohome/internal/core"
 	"gohome/internal/websockets"
+	"gohome/shared/middlewares"
 	"gohome/shared/types"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type Server struct {
@@ -31,8 +31,6 @@ func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
 	staticDir := "./dist"
-
-	handler := s.corsMiddleware(mux)
 
 	// --- Routes ---
 
@@ -56,6 +54,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /api/adapters/start/{adapterId}", s.handleStartAdapter)
 	mux.HandleFunc("POST /api/adapters/stop/{adapterId}", s.handleStopAdapter)
 
+	mux.HandleFunc("GET /api/plugins", s.handleListPlugins)
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Join(staticDir, r.URL.Path)
 
@@ -75,7 +75,7 @@ func (s *Server) Start() error {
 
 	server := &http.Server{
 		Addr:    s.addr,
-		Handler: handler,
+		Handler: middlewares.CorsMiddleware(mux),
 	}
 
 	log.Printf("[Server] API listening on http://localhost%s", s.addr)
@@ -210,26 +210,12 @@ func (s *Server) handleStopAdapter(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status": "stopped"}`))
 }
 
-// --- Middleware ---
+func (s *Server) handleListPlugins(w http.ResponseWriter, r *http.Request) {
 
-func (s *Server) corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-		if strings.HasPrefix(r.URL.Path, "/api") {
-			w.Header().Set("Content-Type", "application/json")
-		}
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+	json.NewEncoder(w).Encode(s.kernel.ListPlugins())
 }
+
+// --- Middleware ---
 
 type DeviceCreateRequest struct {
 	Address    string   `json:"address"`

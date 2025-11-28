@@ -4,13 +4,15 @@ import type { Protocol } from "../types/protocol";
 import type { Scanner } from "../types/scanner";
 
 const env = import.meta.env.VITE_APP_ENV;
-export const API_HOST = env == "production" ? document.location.origin : "http://localhost:8080";
 
+export const API_PROTOCOL = env == "production" ? document.location.protocol : "http"
+export const API_HOST = env == "production" ? document.location.hostname : "localhost"
+export const API_PORT = env == "production" ? document.location.port : "8080"
 
 export class ApiService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = `${API_HOST}/api`) {
+  constructor(baseUrl: string = `${API_PROTOCOL}://${API_HOST}:${API_PORT}/api`) {
     this.baseUrl = baseUrl;
     
     // Bindings
@@ -24,6 +26,8 @@ export class ApiService {
     this.unlinkDeviceFromAdapter = this.unlinkDeviceFromAdapter.bind(this);
     this.startScanner = this.startScanner.bind(this)
     this.stopScanner = this.stopScanner.bind(this)
+    this.startAdapter = this.startAdapter.bind(this)
+    this.stopAdapter = this.stopAdapter.bind(this)
   }
 
   private async getJson<T>(path: string): Promise<T> {
@@ -87,6 +91,14 @@ export class ApiService {
 
    async stopScanner(id: string): Promise<void> {
     return this.post(`/scanners/stop/${id}`, {});
+  }
+
+  async startAdapter(id: string): Promise<void> {
+    return this.post(`/adapters/start/${id}`, {});
+  }
+
+   async stopAdapter(id: string): Promise<void> {
+    return this.post(`/adapters/stop/${id}`, {});
   }
 }
 

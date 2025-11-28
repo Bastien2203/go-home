@@ -4,7 +4,17 @@ import { useApi } from "./useApi";
 
 export function useAdapters() {
   const h = useApi(api.getAdapters);
-  return { adapters: h.data || [], adaptersLoading: h.loading, adaptersError: h.error };
+  const stopAdapter = async (id: string) => {
+    await api.stopAdapter(id)
+    h.refresh()
+  }
+
+  const startAdapter = async (id: string) => {
+    await api.startAdapter(id)
+    h.refresh()
+  }
+  
+  return { adapters: h.data || [], adaptersLoading: h.loading, adaptersError: h.error, startAdapter, stopAdapter };
 }
 
 export function useScanners() {

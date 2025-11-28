@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Topic } from '../types/topics';
+import { API_HOST, API_PORT } from '../services/api';
 
-const env = import.meta.env.VITE_APP_ENV;
-const WS_HOST = env == "production" ? `ws://${document.location.hostname}:${document.location.port}` : "ws://localhost:8080";
+
+const WS_HOST =  `ws://${API_HOST}:${API_PORT}` ;
 
 export const useTopic = <T> (topic: Topic, onMessage: (msg: T) => void) => {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(WS_HOST);
+    const ws = new WebSocket(`${WS_HOST}/ws`);
     socketRef.current = ws;
 
     ws.onopen = () => {

@@ -10,10 +10,11 @@ import {
     Clock,
     ChevronsLeftRightEllipsis,
     ChartLine,
-    ArrowDownUp
+    ArrowDownUp,
 } from "lucide-react";
 import { DeviceCapabilitiesGrid } from "./DeviceCapabilitiesGrid";
 import { Frame } from "../../layouts/Frame";
+import { DynamicWidget } from "../../DynamicWidget";
 
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export const DeviceDetails = ({ adapters, device, onLink, onUnlink }: Props) => {
+    const widgets = adapters.filter(a => a.state === "running" && device.adapter_ids?.includes(a.id)).flatMap(a => Object.values(a.widgets))
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-2 grid-rows-2 gap-6">
@@ -61,8 +63,14 @@ export const DeviceDetails = ({ adapters, device, onLink, onUnlink }: Props) => 
 
                 {/* Capabilities */}
                 <Frame icon={ChartLine} title="Device Data" padding className="row-span-2 col-start-2 row-start-1">
-                    <DeviceCapabilitiesGrid device={device} />
+                    <DeviceCapabilitiesGrid device={device} widgets={widgets.filter(w => w.mount_point == "capability_widget")}/>
                 </Frame>
+
+                {
+                    widgets
+                        .filter(w => w.mount_point == "device_widget")
+                        .map(widget => <DynamicWidget key={widget.id} widget={widget} deviceId={device.id}/>)
+                }
             </div>
         </div>
     );

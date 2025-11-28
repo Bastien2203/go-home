@@ -161,6 +161,22 @@ func (m *PluginManager) GetPluginById(t plugin.PluginType, id string) (*plugin.P
 	return plugin, nil
 }
 
+func (m *PluginManager) GetPlugins() []*plugin.Plugin {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	total := 0
+	for _, group := range m.plugins {
+		total += len(group)
+	}
+
+	plugins := make([]*plugin.Plugin, 0, total)
+	for _, t := range plugin.PluginTypes {
+		plugins = append(plugins, utils.Values(m.plugins[t])...)
+	}
+	return plugins
+}
+
 func (m *PluginManager) StopPlugin(p *plugin.Plugin) error {
 	m.eventBus.Publish(events.Event{
 		Type:    events.PluginStop(p.ID),
