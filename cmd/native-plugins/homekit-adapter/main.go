@@ -10,10 +10,11 @@ import (
 )
 
 var p = &plugin.Plugin{
-	ID:    "homekit-adapter",
-	Name:  "Homekit",
-	Type:  plugin.PluginAdapter,
-	State: types.StateStopped,
+	ID:      "homekit-adapter",
+	Name:    "Homekit",
+	Type:    plugin.PluginAdapter,
+	State:   types.StateStopped,
+	Widgets: map[string]*plugin.Widget{},
 }
 
 func main() {

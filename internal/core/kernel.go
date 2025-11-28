@@ -31,13 +31,14 @@ func NewKernel(eventBus *events.EventBus, repository DeviceRepository) (*Kernel,
 	if err != nil {
 		return nil, err
 	}
+
 	kernel := &Kernel{
 		eventBus:      eventBus,
 		repository:    repository,
 		protocols:     make(map[string]types.Protocol),
 		mu:            make(map[string]*sync.Mutex),
-		pluginManager: pluginManager,
 		processes:     make(map[string]*exec.Cmd),
+		pluginManager: pluginManager,
 	}
 
 	if err := events.Subscribe(eventBus, events.RawDataReceived, kernel.handleStateUpdate); err != nil {
@@ -373,4 +374,13 @@ func (k *Kernel) UnlinkDeviceFromAdapter(deviceID, adapterID string) error {
 		Payload: device,
 	})
 	return nil
+}
+
+func (k *Kernel) ListPlugins() []*plugin.Plugin {
+	plugins := k.pluginManager.GetPlugins()
+
+	sort.Slice(plugins, func(i, j int) bool {
+		return plugins[i].ID < plugins[j].ID
+	})
+	return plugins
 }

@@ -23,3 +23,11 @@ func Values[K comparable, V any](entries map[K]V) []V {
 	}
 	return list
 }
+
+func Keys[K comparable, V any](entries map[K]V) []K {
+	list := make([]K, 0, len(entries))
+	for k := range entries {
+		list = append(list, k)
+	}
+	return list
+}

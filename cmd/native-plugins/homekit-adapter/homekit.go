@@ -131,7 +131,7 @@ func (h *HomekitAdapter) onDeviceRegistered(dev types.Device) {
 	}
 }
 
-func (h *HomekitAdapter) onDeviceUnregistered(dev *types.Device) {
+func (h *HomekitAdapter) onDeviceUnregistered(dev types.Device) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 

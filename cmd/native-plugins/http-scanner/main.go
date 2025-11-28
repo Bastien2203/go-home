@@ -10,10 +10,11 @@ import (
 )
 
 var p = &plugin.Plugin{
-	ID:    "http-scanner",
-	Name:  "Http Scanner",
-	Type:  plugin.PluginScanner,
-	State: types.StateStopped,
+	ID:      "http-scanner",
+	Name:    "Http Scanner",
+	Type:    plugin.PluginScanner,
+	State:   types.StateStopped,
+	Widgets: map[string]*plugin.Widget{},
 }
 
 func main() {
@@ -26,6 +27,6 @@ func main() {
 	}
 
 	client := plugin.NewPluginClient(p, eventBus)
-	scanner := NewHTTPScanner(eventBus, 8080, client.EmitNewState)
+	scanner := NewHTTPScanner(eventBus, 8889, client.EmitNewState)
 	client.RunPlugin(scanner.Start, scanner.Stop)
 }

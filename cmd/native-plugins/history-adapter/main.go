@@ -10,19 +10,19 @@ import (
 )
 
 var p = &plugin.Plugin{
-	ID:    "bluetooth-scanner",
-	Name:  "Bluetooth Scanner",
-	Type:  plugin.PluginScanner,
+	ID:    "history-adapter",
+	Name:  "History",
+	Type:  plugin.PluginAdapter,
 	State: types.StateStopped,
 	Widgets: map[string]*plugin.Widget{
-		"bluetooth-scanner-widget": {
-			ID:   "bluetooth-scanner-widget",
+		"history-adapter-widget": {
+			ID:   "history-adapter-widget",
 			Type: plugin.TypeLineChart,
-			Name: "Test ble",
+			Name: "Data history",
 			Config: map[string]any{
-				"text": "Bluetooth scanner",
+				"dataUrl": ":8888/api/history/device/{deviceId}/capabilities/{capabilityType}",
 			},
-			MountPoint: plugin.DeviceWidget,
+			MountPoint: plugin.CapabilityWidget,
 		},
 	},
 }
@@ -37,6 +37,9 @@ func main() {
 	}
 
 	client := plugin.NewPluginClient(p, eventBus)
-	scanner := NewBluetoothScanner(eventBus, client.EmitNewState)
-	client.RunPlugin(scanner.Start, scanner.Stop)
+	adapter, err := NewHistoryAdapter(eventBus, client.EmitNewState, 8888)
+	if err != nil {
+		log.Fatalf("Error creating homekit adapter : %v", err)
+	}
+	client.RunPlugin(adapter.Start, adapter.Stop)
 }
