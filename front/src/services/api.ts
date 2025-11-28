@@ -2,6 +2,7 @@ import type { Adapter } from "../types/adapter";
 import type { Device, DeviceCreateRequest } from "../types/device";
 import type { Protocol } from "../types/protocol";
 import type { Scanner } from "../types/scanner";
+import type { User } from "../types/user";
 
 const env = import.meta.env.VITE_APP_ENV;
 
@@ -14,7 +15,7 @@ export class ApiService {
 
   constructor(baseUrl: string = `${API_PROTOCOL}://${API_HOST}:${API_PORT}/api`) {
     this.baseUrl = baseUrl;
-    
+
     // Bindings
     this.getAdapters = this.getAdapters.bind(this);
     this.getScanners = this.getScanners.bind(this);
@@ -28,10 +29,14 @@ export class ApiService {
     this.stopScanner = this.stopScanner.bind(this)
     this.startAdapter = this.startAdapter.bind(this)
     this.stopAdapter = this.stopAdapter.bind(this)
+    this.login = this.login.bind(this)
+    this.register = this.register.bind(this)
+    this.canRegister = this.canRegister.bind(this)
+    this.me = this.me.bind(this)
   }
 
   private async getJson<T>(path: string): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`);
+    const res = await fetch(`${this.baseUrl}${path}`, {credentials: 'include', });
     if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
     return res.json();
   }
@@ -41,6 +46,7 @@ export class ApiService {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      credentials: 'include', 
     });
     if (!res.ok) throw new Error(`Failed to post ${path}: ${res.status}`);
     return res.json();
@@ -89,7 +95,7 @@ export class ApiService {
     return this.post(`/scanners/start/${id}`, {});
   }
 
-   async stopScanner(id: string): Promise<void> {
+  async stopScanner(id: string): Promise<void> {
     return this.post(`/scanners/stop/${id}`, {});
   }
 
@@ -97,8 +103,31 @@ export class ApiService {
     return this.post(`/adapters/start/${id}`, {});
   }
 
-   async stopAdapter(id: string): Promise<void> {
+  async stopAdapter(id: string): Promise<void> {
     return this.post(`/adapters/stop/${id}`, {});
+  }
+
+
+  // --- User actions ---
+
+  async login(email: string, password: string): Promise<void> {
+    return this.post(`/users/login`, { email, password });
+  }
+
+  async logout(): Promise<void> {
+    return this.post(`/users/logout`, {});
+  }
+
+  async register(email: string, password: string): Promise<void> {
+    return this.post(`/users/register`, { email, password });
+  }
+
+  async canRegister(): Promise<{can_register: boolean}> {
+    return this.getJson(`/users/can_register`);
+  }
+
+  async me(): Promise<User> {
+    return this.getJson(`/users/me`);
   }
 }
 
