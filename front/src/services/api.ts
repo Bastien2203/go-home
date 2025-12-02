@@ -8,12 +8,12 @@ const env = import.meta.env.VITE_APP_ENV;
 
 export const API_PROTOCOL = env == "production" ? document.location.protocol : "http"
 export const API_HOST = env == "production" ? document.location.hostname : "localhost"
-export const API_PORT = env == "production" ? document.location.port : "8080"
+export const API_PORT = env == "production" ? (document.location.port != "" ? `:${document.location.port}`: "") : ":8080"
 
 export class ApiService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = `${API_PROTOCOL}://${API_HOST}:${API_PORT}/api`) {
+  constructor(baseUrl: string = `${API_PROTOCOL}//${API_HOST}${API_PORT}/api`) {
     this.baseUrl = baseUrl;
 
     // Bindings
