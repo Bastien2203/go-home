@@ -36,7 +36,7 @@ export class ApiService {
   }
 
   private async getJson<T>(path: string): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {credentials: 'include', });
+    const res = await fetch(`${this.baseUrl}${path}`, { credentials: 'include', });
     if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
     return res.json();
   }

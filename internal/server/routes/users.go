@@ -6,6 +6,7 @@ import (
 	"gohome/internal/repository"
 	"gohome/internal/security"
 	"gohome/shared/config"
+	"log"
 	"net/http"
 	"net/mail"
 
@@ -73,7 +74,13 @@ func (s *UsersRouter) handleLogin(w http.ResponseWriter, r *http.Request) {
 	session.Options.HttpOnly = true
 	session.Options.Secure = s.appEnv == config.Production
 	session.Options.SameSite = http.SameSiteStrictMode
-	session.Save(r, w)
+	session.Options.Path = "/"
+	err = session.Save(r, w)
+	if err != nil {
+		log.Printf("[Session] error while saving session %v", err)
+		http.Error(w, "Session save failed", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "logged"})
