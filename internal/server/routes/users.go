@@ -73,8 +73,9 @@ func (s *UsersRouter) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	session.Options.HttpOnly = true
 	session.Options.Secure = s.appEnv == config.Production
-	session.Options.SameSite = http.SameSiteStrictMode
+	session.Options.SameSite = http.SameSiteLaxMode
 	session.Options.Path = "/"
+	session.Options.Domain = ""
 	err = session.Save(r, w)
 	if err != nil {
 		log.Printf("[Session] error while saving session %v", err)

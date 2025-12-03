@@ -6,7 +6,7 @@ import type { User } from "../types/user";
 
 const env = import.meta.env.VITE_APP_ENV;
 
-export const API_PROTOCOL = env == "production" ? document.location.protocol : "http"
+export const API_PROTOCOL = env == "production" ? document.location.protocol : "http:"
 export const API_HOST = env == "production" ? document.location.hostname : "localhost"
 export const API_PORT = env == "production" ? (document.location.port != "" ? `:${document.location.port}`: "") : ":8080"
 
@@ -53,7 +53,7 @@ export class ApiService {
   }
 
   private async delete(path: string): Promise<void> {
-    const res = await fetch(`${this.baseUrl}${path}`, { method: "DELETE" });
+    const res = await fetch(`${this.baseUrl}${path}`, { method: "DELETE", credentials: 'include' });
     if (!res.ok) throw new Error(`Failed to delete ${path}: ${res.status}`);
   }
 

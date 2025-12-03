@@ -11,16 +11,33 @@ const Root = () => {
   const [isAuthenticated, setAuthenticated] = useState<boolean|null>(null)
 
   useEffect(() => {
-    api.me()
-      .then(_ => setAuthenticated(true))
-      .catch(_ => setAuthenticated(false))
+    const checkAuth = async () => {
+      try {
+        await api.me();
+        setAuthenticated(true);
+      } catch (e) {
+        console.error("Auth check failed:", e); 
+        setAuthenticated(false);
+      }
+    };
+
+    checkAuth();
   }, [])
 
-  if (isAuthenticated == null) return <>Loading</>
-  else if (isAuthenticated == false) return <LoginPage onLoginSuccess={() => setAuthenticated(true)}/>
+  if (isAuthenticated === null) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <div className="text-xl font-semibold text-gray-500">Loading application...</div>
+        </div>
+    )
+  }
+
+  if (isAuthenticated === false) {
+     return <LoginPage onLoginSuccess={() => setAuthenticated(true)}/>
+  }
+  
   return <App />
 }
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Root/>
