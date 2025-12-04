@@ -3,13 +3,14 @@ import type { Topic } from '../types/topics';
 import { API_HOST, API_PORT } from '../services/api';
 
 
-const WS_HOST =  `ws://${API_HOST}:${API_PORT}` ;
+const WS_HOST =  `ws://${API_HOST}${API_PORT}` ;
 
 export const useTopic = <T> (topic: Topic, onMessage: (msg: T) => void) => {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    console.log(WS_HOST)
     const ws = new WebSocket(`${WS_HOST}/ws`);
     socketRef.current = ws;
 

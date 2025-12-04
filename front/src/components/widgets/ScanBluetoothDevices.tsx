@@ -39,7 +39,7 @@ export const ScanBluetoothDevices = (props: {
         <tbody className="bg-white divide-y divide-gray-200">
             {devicesList.length > 0 ? (
                 devicesList.map(([address, name]) => (
-                    <tr key={address} className="h-[3em]">
+                    <tr key={`bt-${address.replace(/:/g, '_')}`} className="h-[3em]">
                         <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
                                 {name || "Inconnu"}
