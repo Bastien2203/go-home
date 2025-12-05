@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:22.15-alpine AS node-builder
+FROM node:22.15-alpine AS node-builder
 
 WORKDIR /app
 COPY front/package.json ./
