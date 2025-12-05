@@ -43,7 +43,7 @@ RUN for dir in /app/cmd/native-plugins/*; do \
 done
 
 
-FROM alpine:latest
+FROM alpine:3.22.2
 
 RUN apk update
 
