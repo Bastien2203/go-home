@@ -45,16 +45,11 @@ done
 
 FROM alpine:latest
 
-RUN apk update && apk add --no-cache \
-    ca-certificates \
-    bluez \
-    bluez-deprecated \
-    bluez-libs \
-    bluez-dev \
-    libc-dev \
-    linux-headers \
-    dbus \
-    dbus-glib
+RUN apk update
+
+RUN apk add --no-cache libc-dev linux-headers bluez-dev
+
+RUN apk add --no-cache ca-certificates bluez bluez-deprecated bluez-libs dbus dbus-glib
 
 RUN mkdir -p /run/dbus
 
