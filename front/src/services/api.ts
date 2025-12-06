@@ -7,6 +7,7 @@ import type { User } from "../types/user";
 const env = import.meta.env.VITE_APP_ENV;
 
 export const API_PROTOCOL = env == "production" ? document.location.protocol : "http:"
+export const WS_PROTOCOL = env == "production" ? "wss:" : "ws:"
 export const API_HOST = env == "production" ? document.location.hostname : "localhost"
 export const API_PORT = env == "production" ? (document.location.port != "" ? `:${document.location.port}`: "") : ":8080"
 

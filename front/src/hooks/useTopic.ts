@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Topic } from '../types/topics';
-import { API_HOST, API_PORT } from '../services/api';
+import { API_HOST, API_PORT, WS_PROTOCOL } from '../services/api';
 
 
-const WS_HOST =  `ws://${API_HOST}${API_PORT}` ;
+const WS_HOST =  `${WS_PROTOCOL}//${API_HOST}${API_PORT}` ;
 
 export const useTopic = <T> (topic: Topic, onMessage: (msg: T) => void) => {
   const [isConnected, setIsConnected] = useState(false);
