@@ -75,9 +75,9 @@ func (k *Kernel) handleStateUpdate(rawData types.RawData) {
 	}
 
 	mu.Unlock()
-	if err := k.repository.Save(device); err != nil {
-		log.Printf("[Kernel] Error when saving device %s", err.Error())
-	}
+	// if err := k.repository.Save(device); err != nil {
+	// 	log.Printf("[Kernel] Error when saving device %s", err.Error())
+	// }
 
 	for _, adapterID := range device.AdapterIDs {
 		go func(adapterID string) {
