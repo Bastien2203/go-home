@@ -7,6 +7,7 @@ import (
 	"gohome/shared/types"
 	"gohome/utils"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -281,6 +282,7 @@ func (h *HomekitAdapter) reloadServer() error {
 	if err != nil {
 		return fmt.Errorf("failed to create hap server: %w", err)
 	}
+	server.Ifaces = []string{os.Getenv("INTERNET_INTERFACE")}
 	h.server = server
 
 	ctx, cancel := context.WithCancel(context.Background())
