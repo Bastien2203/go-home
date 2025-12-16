@@ -2,7 +2,7 @@ FROM node:22-bookworm-slim AS node-builder
 
 WORKDIR /app
 COPY front/package.json front/package-lock.json ./
-RUN npm ci
+RUN npm ci --omit=dev
 
 ENV VITE_APP_ENV=production
 COPY front/ .
