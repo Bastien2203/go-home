@@ -3,14 +3,11 @@ import { getIcon } from "../../../services/icons";
 import { formatNumber } from "../../../services/numbers";
 import { formatUnit } from "../../../services/units";
 import type { Device } from "../../../types/device";
-import type { Widget } from "../../../types/widget";
-import { DynamicWidget } from "../../DynamicWidget";
 import { useState } from "react";
 
 
 export const DeviceCapabilitiesGrid = (props: {
   device: Device;
-  widgets: Widget[]
 }) => {
   const [selectedCapability, setSelectedCapability] = useState<string>()
   const capabilities = Object.values(props.device.capabilities || {});
@@ -58,9 +55,6 @@ export const DeviceCapabilitiesGrid = (props: {
           </div>
         ))}
       </div>
-      {
-        selectedCapability && props.widgets.map(widget => <DynamicWidget key={widget.id} widget={widget} deviceId={props.device.id} capabilityType={selectedCapability} />)
-      }
     </div>
   );
 };

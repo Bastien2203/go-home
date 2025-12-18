@@ -123,7 +123,6 @@ Expose devices to Apple Homekit. Requires host network access (for mDNS).
 - auto restart scanner used by registered device
 - homekit qr code
 - influx db adapter
-- Make core a go plugin, so gohome plugins can have a independant go.mod
 
 
 

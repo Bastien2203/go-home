@@ -12,21 +12,11 @@ import (
 )
 
 var p = &plugin.Plugin{
-	ID:    "bluetooth-scanner",
-	Name:  "Bluetooth Scanner",
-	Type:  plugin.PluginScanner,
-	State: types.StateStopped,
-	Widgets: map[string]*plugin.Widget{
-		"bluetooth-scanner-widget": {
-			ID:   "bluetooth-scanner-widget",
-			Type: plugin.TypeLineChart,
-			Name: "Test ble",
-			Config: map[string]any{
-				"text": "Bluetooth scanner",
-			},
-			MountPoint: plugin.DeviceWidget,
-		},
-	},
+	ID:      "bluetooth-scanner",
+	Name:    "Bluetooth Scanner",
+	Type:    plugin.PluginScanner,
+	State:   types.StateStopped,
+	Widgets: map[string]*plugin.Widget{},
 }
 
 func main() {
