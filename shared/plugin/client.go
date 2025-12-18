@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"gohome/shared/types"
 )
@@ -49,7 +50,7 @@ func (c *PluginClient) RunPlugin(onStart func() error, onStop func() error) {
 	})
 
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 
 	c.eventBus.Publish(events.Event{
