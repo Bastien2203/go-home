@@ -14,7 +14,7 @@ import (
 type EventType string
 
 const (
-	RawDataReceived      EventType = "gohome/raw_data"
+	ParsedDataReceived   EventType = "gohome/parsed_data"
 	BluetoothDeviceFound EventType = "gohome/bluetooth/found"
 	PluginConnected      EventType = "gohome/plugin/connected"
 	PluginDisconnected   EventType = "gohome/plugin/disconnected"

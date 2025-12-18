@@ -16,7 +16,6 @@ import (
 type Kernel struct {
 	eventBus      *events.EventBus
 	repository    DeviceRepository
-	protocols     map[string]types.Protocol
 	mu            map[string]*sync.Mutex
 	muLock        sync.Mutex
 	pluginManager *PluginManager
@@ -32,61 +31,44 @@ func NewKernel(eventBus *events.EventBus, repository DeviceRepository) (*Kernel,
 	kernel := &Kernel{
 		eventBus:      eventBus,
 		repository:    repository,
-		protocols:     make(map[string]types.Protocol),
 		mu:            make(map[string]*sync.Mutex),
 		processes:     make(map[string]*exec.Cmd),
 		pluginManager: pluginManager,
 	}
 
-	if err := events.Subscribe(eventBus, events.RawDataReceived, kernel.handleStateUpdate); err != nil {
+	if err := events.Subscribe(eventBus, events.ParsedDataReceived, kernel.handleStateUpdate); err != nil {
 		return nil, err
 	}
 
 	return kernel, nil
 }
 
-func (k *Kernel) handleStateUpdate(rawData types.RawData) {
-	device, err := k.repository.FindByAddress(rawData.Address, rawData.AddressType)
+func (k *Kernel) handleStateUpdate(parsedData types.ParsedData) {
+	device, err := k.repository.FindByAddress(parsedData.Address, parsedData.AddressType)
 	if err != nil || device == nil {
 		return
 	}
 
-	device.LastUpdated = rawData.Timestamp
-
-	protocol, exists := k.protocols[device.Protocol]
-	if !exists {
-		log.Printf("[Kernel] (handleStateUpdate) Protocol not found for device %s: %s", device.ID, device.Protocol)
-		return
-	}
-
-	deviceData, err := protocol.Parse(rawData.Data)
-	if err != nil {
-		log.Printf("[Kernel] (handleStateUpdate) Error parsing data for device %s: %v", device.ID, err)
-		return
-	}
+	device.LastUpdated = parsedData.Timestamp
 
 	mu := k.getMutex(device.ID)
 	mu.Lock()
-	for _, c := range deviceData {
+	for _, c := range parsedData.Data {
 		device.Capabilities[c.Name] = c
 	}
-
+	// TODO : Save updated device (but its too much intensive to do it for each data update)
 	mu.Unlock()
-	// if err := k.repository.Save(device); err != nil {
-	// 	log.Printf("[Kernel] Error when saving device %s", err.Error())
-	// }
 
 	for _, adapterID := range device.AdapterIDs {
 		go func(adapterID string) {
-			for _, c := range deviceData {
+			for _, c := range parsedData.Data {
 				k.eventBus.Publish(events.Event{
 					Type: events.UpdateDataForAdapter(adapterID),
 					Payload: types.DeviceStateUpdate{
 						DeviceID:       device.ID,
 						DeviceName:     device.Name,
-						DeviceProtocol: device.Protocol,
 						CapabilityType: c.Name,
-						Timestamp:      rawData.Timestamp,
+						Timestamp:      parsedData.Timestamp,
 						Value:          c.Value,
 					},
 				})
@@ -182,36 +164,6 @@ func (k *Kernel) StopAdapters() {
 			log.Printf("error stoppig adapter : %v", err)
 		}
 	}
-}
-
-// --- Protocols Management ---
-
-func (k *Kernel) RegisterProtocol(protocol types.Protocol) {
-	k.protocols[protocol.ID()] = protocol
-	log.Printf("[Kernel] Protocol registered: %s", protocol.ID())
-}
-
-func (k *Kernel) ListProtocols() []map[string]any {
-	list := make([]map[string]any, 0, len(k.protocols))
-	for _, p := range k.protocols {
-		list = append(list, map[string]any{
-			"id":   p.ID(),
-			"name": p.Name(),
-		})
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return list[i]["id"].(string) < list[j]["id"].(string)
-	})
-	return list
-}
-
-func (k *Kernel) GetProtocol(id string) (types.Protocol, error) {
-	protocol, exists := k.protocols[id]
-	if !exists {
-		return nil, fmt.Errorf("protocol not found: %s", id)
-	}
-	return protocol, nil
 }
 
 // --- Devices Management ---

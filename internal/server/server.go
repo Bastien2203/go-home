@@ -47,7 +47,6 @@ func (s *Server) Start() error {
 	routes.NewAdaptersRouter(s.kernel, mux, userRouter.AuthMiddleware)
 	routes.NewDevicesRouter(s.kernel, mux, userRouter.AuthMiddleware)
 	routes.NewPluginsRouter(s.kernel, mux, userRouter.AuthMiddleware)
-	routes.NewProtocolsRouter(s.kernel, mux, userRouter.AuthMiddleware)
 	routes.NewScannersRouter(s.kernel, mux, userRouter.AuthMiddleware)
 
 	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {

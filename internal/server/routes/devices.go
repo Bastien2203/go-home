@@ -15,10 +15,10 @@ type DevicesRouter struct {
 }
 
 type DeviceCreateRequest struct {
-	Address    string   `json:"address"`
-	Name       string   `json:"name"`
-	Protocol   string   `json:"protocol"`
-	AdapterIDs []string `json:"adapter_ids"`
+	Address     string   `json:"address"`
+	Name        string   `json:"name"`
+	AdapterIDs  []string `json:"adapter_ids"`
+	AddressType string   `json:"address_type"`
 }
 
 func NewDevicesRouter(kernel *core.Kernel, mux *http.ServeMux, middleware func(next http.Handler) http.Handler) *DevicesRouter {
@@ -52,13 +52,7 @@ func (s *DevicesRouter) handleCreateDevice(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	protocol, err := s.kernel.GetProtocol(req.Protocol)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Unknown protocol: %s", req.Protocol), http.StatusBadRequest)
-		return
-	}
-
-	dev := types.NewDevice(req.Address, req.Name, req.Protocol, req.AdapterIDs, protocol.AddressType())
+	dev := types.NewDevice(req.Address, req.Name, req.AdapterIDs, types.AddressType(req.AddressType))
 	if err := s.kernel.RegisterDevice(dev); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to register device: %v", err), http.StatusInternalServerError)
 		return

@@ -22,7 +22,6 @@ func NewDeviceRepository(db *sql.DB) (*DeviceRepository, error) {
 		address TEXT,
 		address_type TEXT,
 		name TEXT,
-		protocol TEXT,
 		adapter_ids TEXT,
 		created_at DATETIME,
 		capabilities TEXT,
@@ -57,8 +56,8 @@ func (r *DeviceRepository) Save(device *types.Device) error {
 
 	query := `
 	INSERT OR REPLACE INTO devices 
-	(id, address, address_type, name, protocol, adapter_ids, created_at, capabilities, last_updated)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	(id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err = r.db.Exec(query,
@@ -66,7 +65,6 @@ func (r *DeviceRepository) Save(device *types.Device) error {
 		device.Address,
 		device.AddressType,
 		device.Name,
-		device.Protocol,
 		string(adapterIDsJson),
 		device.CreatedAt,
 		string(capabilitiesJson),
@@ -81,14 +79,14 @@ func (r *DeviceRepository) Save(device *types.Device) error {
 }
 
 func (r *DeviceRepository) FindByID(id string) (*types.Device, error) {
-	query := `SELECT id, address, address_type, name, protocol, adapter_ids, created_at, capabilities, last_updated FROM devices WHERE id = ?`
+	query := `SELECT id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated FROM devices WHERE id = ?`
 
 	row := r.db.QueryRow(query, id)
 	return r.scanDevice(row)
 }
 
 func (r *DeviceRepository) FindAll() ([]*types.Device, error) {
-	query := `SELECT id, address, address_type, name, protocol, adapter_ids, created_at, capabilities, last_updated FROM devices ORDER BY id`
+	query := `SELECT id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated FROM devices ORDER BY id`
 
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -108,7 +106,7 @@ func (r *DeviceRepository) FindAll() ([]*types.Device, error) {
 }
 
 func (r *DeviceRepository) FindByAddress(address string, addressType types.AddressType) (*types.Device, error) {
-	query := `SELECT id, address, address_type, name, protocol, adapter_ids, created_at, capabilities, last_updated FROM devices WHERE address = ? AND address_type = ?`
+	query := `SELECT id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated FROM devices WHERE address = ? AND address_type = ?`
 
 	row := r.db.QueryRow(query, address, addressType)
 	return r.scanDevice(row)
@@ -185,7 +183,6 @@ func (r *DeviceRepository) scanDevice(row Scanner) (*types.Device, error) {
 		&d.Address,
 		&addressType,
 		&d.Name,
-		&d.Protocol,
 		&adapterIDsJson,
 		&d.CreatedAt,
 		&capabilitiesJson,
