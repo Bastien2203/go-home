@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os/exec"
 
-	"gohome/shared/events"
-	"gohome/shared/plugin"
-	"gohome/shared/types"
-
 	"log"
 	"sort"
 	"sync"
+
+	"github.com/Bastien2203/go-home/shared/events"
+	"github.com/Bastien2203/go-home/shared/plugin"
+	"github.com/Bastien2203/go-home/shared/types"
 )
 
 type Kernel struct {

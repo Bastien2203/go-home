@@ -2,12 +2,14 @@ package core
 
 import (
 	"fmt"
-	"gohome/shared/events"
-	"gohome/shared/plugin"
-	"gohome/utils"
+
 	"log"
 	"sync"
 	"time"
+
+	"github.com/Bastien2203/go-home/shared/events"
+	"github.com/Bastien2203/go-home/shared/plugin"
+	"github.com/Bastien2203/go-home/utils"
 )
 
 type PluginManager struct {

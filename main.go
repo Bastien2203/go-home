@@ -3,19 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-	"gohome/internal/core"
-	"gohome/internal/repository"
 
-	"gohome/shared/config"
-	"gohome/shared/events"
-
-	"gohome/internal/protocols"
-
-	"gohome/internal/server"
-	"gohome/internal/websockets"
 	"log"
 	"os"
 	"os/signal"
+
+	"github.com/Bastien2203/go-home/internal/core"
+	"github.com/Bastien2203/go-home/internal/protocols"
+	"github.com/Bastien2203/go-home/internal/repository"
+	"github.com/Bastien2203/go-home/internal/server"
+	"github.com/Bastien2203/go-home/internal/websockets"
+	"github.com/Bastien2203/go-home/shared/config"
+	"github.com/Bastien2203/go-home/shared/events"
 )
 
 func setupProtocols(kernel *core.Kernel) {

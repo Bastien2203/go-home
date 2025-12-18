@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"gohome/shared/events"
-	"gohome/shared/types"
 	"log"
 	"time"
 
+	"github.com/Bastien2203/go-home/shared/events"
+	"github.com/Bastien2203/go-home/shared/types"
 	"tinygo.org/x/bluetooth"
 )
 

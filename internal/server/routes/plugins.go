@@ -2,8 +2,10 @@ package routes
 
 import (
 	"encoding/json"
-	"gohome/internal/core"
+
 	"net/http"
+
+	"github.com/Bastien2203/go-home/internal/core"
 )
 
 type PluginsRouter struct {

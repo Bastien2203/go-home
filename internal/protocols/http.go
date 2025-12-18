@@ -3,7 +3,8 @@ package protocols
 import (
 	"encoding/json"
 	"fmt"
-	"gohome/shared/types"
+
+	"github.com/Bastien2203/go-home/shared/types"
 )
 
 type HttpParser struct{}

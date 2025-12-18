@@ -3,10 +3,11 @@ package protocols
 import (
 	"encoding/json"
 	"fmt"
-	"gohome/shared/types"
+
 	"log"
 
 	"github.com/Bastien2203/bthomev2"
+	"github.com/Bastien2203/go-home/shared/types"
 	"tinygo.org/x/bluetooth"
 )
 

@@ -1,6 +1,6 @@
 package core
 
-import "gohome/shared/types"
+import "github.com/Bastien2203/go-home/shared/types"
 
 type DeviceRepository interface {
 	Save(device *types.Device) error

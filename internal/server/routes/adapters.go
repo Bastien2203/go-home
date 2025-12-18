@@ -2,7 +2,9 @@ package routes
 
 import (
 	"encoding/json"
-	"gohome/internal/core"
+
+	"github.com/Bastien2203/go-home/internal/core"
+
 	"net/http"
 )
 

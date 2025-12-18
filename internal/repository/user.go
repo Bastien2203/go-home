@@ -3,7 +3,8 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"gohome/internal/core"
+
+	"github.com/Bastien2203/go-home/internal/core"
 )
 
 type UserRepository struct {

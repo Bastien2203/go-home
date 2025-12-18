@@ -1,13 +1,13 @@
 package plugin
 
 import (
-	"gohome/shared/events"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"gohome/shared/types"
+	"github.com/Bastien2203/go-home/shared/events"
+	"github.com/Bastien2203/go-home/shared/types"
 )
 
 type PluginClient struct {

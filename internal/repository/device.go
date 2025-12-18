@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"gohome/shared/types"
+
 	"slices"
 
+	"github.com/Bastien2203/go-home/shared/types"
 	_ "github.com/mattn/go-sqlite3"
 )
 

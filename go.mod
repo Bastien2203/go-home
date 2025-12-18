@@ -1,4 +1,4 @@
-module gohome
+module github.com/Bastien2203/go-home
 
 go 1.25.3
 

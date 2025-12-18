@@ -3,9 +3,11 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"gohome/internal/core"
-	"gohome/shared/types"
+
 	"net/http"
+
+	"github.com/Bastien2203/go-home/internal/core"
+	"github.com/Bastien2203/go-home/shared/types"
 )
 
 type DevicesRouter struct {

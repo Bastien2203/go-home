@@ -1,6 +1,6 @@
 package plugin
 
-import "gohome/shared/types"
+import "github.com/Bastien2203/go-home/shared/types"
 
 type Plugin struct {
 	ID      string             `json:"id"`

@@ -3,10 +3,11 @@ package events
 import (
 	"encoding/json"
 	"fmt"
-	"gohome/shared/config"
+
 	"log"
 	"time"
 
+	"github.com/Bastien2203/go-home/shared/config"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 

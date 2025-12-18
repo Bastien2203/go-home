@@ -2,16 +2,18 @@ package server
 
 import (
 	"fmt"
-	"gohome/internal/core"
-	"gohome/internal/repository"
-	"gohome/internal/server/routes"
-	"gohome/internal/websockets"
-	"gohome/shared/config"
-	"gohome/shared/middlewares"
+
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/Bastien2203/go-home/internal/core"
+	"github.com/Bastien2203/go-home/internal/repository"
+	"github.com/Bastien2203/go-home/internal/server/routes"
+	"github.com/Bastien2203/go-home/internal/websockets"
+	"github.com/Bastien2203/go-home/shared/config"
+	"github.com/Bastien2203/go-home/shared/middlewares"
 )
 
 type Server struct {

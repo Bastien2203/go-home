@@ -2,14 +2,15 @@ package routes
 
 import (
 	"encoding/json"
-	"gohome/internal/core"
-	"gohome/internal/repository"
-	"gohome/internal/security"
-	"gohome/shared/config"
+
 	"log"
 	"net/http"
 	"net/mail"
 
+	"github.com/Bastien2203/go-home/internal/core"
+	"github.com/Bastien2203/go-home/internal/repository"
+	"github.com/Bastien2203/go-home/internal/security"
+	"github.com/Bastien2203/go-home/shared/config"
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 )
