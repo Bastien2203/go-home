@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/Bastien2203/go-home/shared/events"
@@ -11,11 +13,25 @@ import (
 	"tinygo.org/x/bluetooth"
 )
 
+const (
+	EVENT_DEVICE_FOUND_INTERVAL = time.Minute
+	EVENT_DATA_INTERVAL         = time.Minute
+)
+
 type BluetoothScanner struct {
 	eventBus      *events.EventBus
 	adapter       *bluetooth.Adapter
 	onStateChange func(state types.State)
 	started       bool
+
+	cache map[string]*deviceCacheEntry
+	mu    sync.RWMutex
+}
+
+type deviceCacheEntry struct {
+	lastData     []byte
+	lastSeen     time.Time
+	lastMetaSent time.Time
 }
 
 func NewBluetoothScanner(eventBus *events.EventBus, onStateChange func(state types.State)) *BluetoothScanner {
@@ -29,6 +45,7 @@ func NewBluetoothScanner(eventBus *events.EventBus, onStateChange func(state typ
 		adapter:       adapter,
 		onStateChange: onStateChange,
 		started:       false,
+		cache:         make(map[string]*deviceCacheEntry),
 	}
 }
 
@@ -72,33 +89,59 @@ func (s *BluetoothScanner) scanLoop() {
 			serviceData[svc.UUID.String()] = svc.Data
 		}
 
-		// log.Printf("[Bluetooth Scanner] Device found: %s (%s) - RSSI: %d dBm",
-		// 	device.Address.String(),
-		// 	device.LocalName(),
-		// 	device.RSSI)
+		newDataBytes, err := json.Marshal(serviceData)
+		if err != nil {
+			log.Printf("[Bluetooth Scanner] Failed to marshal: %v", err)
+			return
+		}
+
+		address := device.Address.String()
+		now := time.Now()
+
+		s.mu.Lock()
+		entry, exists := s.cache[address]
+		if !exists {
+			entry = &deviceCacheEntry{}
+			s.cache[address] = entry
+		}
+
+		shouldSendRawData := false
+		shouldSendMeta := false
+
+		if !bytes.Equal(entry.lastData, newDataBytes) || now.Sub(entry.lastSeen) > EVENT_DATA_INTERVAL {
+			shouldSendRawData = true
+			entry.lastData = newDataBytes
+			entry.lastSeen = now
+		}
+
+		if now.Sub(entry.lastMetaSent) > EVENT_DEVICE_FOUND_INTERVAL {
+			shouldSendMeta = true
+			entry.lastMetaSent = now
+		}
+		s.mu.Unlock()
 
 		if s.eventBus != nil {
-			bytes, err := json.Marshal(serviceData)
-			if err != nil {
-				log.Printf("[Bluetooth Scanner] Failed to marshal: %v", err)
+			if shouldSendRawData {
+				s.eventBus.Publish(events.Event{
+					Type: events.RawDataReceived,
+					Payload: &types.RawData{
+						Address:     address,
+						Data:        newDataBytes,
+						Timestamp:   now,
+						AddressType: types.BLEAddress,
+					},
+				})
 			}
-			s.eventBus.Publish(events.Event{
-				Type: events.RawDataReceived,
-				Payload: &types.RawData{
-					Address:     device.Address.String(),
-					Data:        bytes,
-					Timestamp:   time.Now(),
-					AddressType: types.BLEAddress,
-				},
-			})
 
-			s.eventBus.Publish(events.Event{
-				Type: events.BluetoothDeviceFound,
-				Payload: &BluetoothDevice{
-					Name:    device.LocalName(),
-					Address: device.Address.String(),
-				},
-			})
+			if shouldSendMeta {
+				s.eventBus.Publish(events.Event{
+					Type: events.BluetoothDeviceFound,
+					Payload: &BluetoothDevice{
+						Name:    device.LocalName(),
+						Address: address,
+					},
+				})
+			}
 		}
 	})
 

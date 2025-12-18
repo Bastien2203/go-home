@@ -12,11 +12,10 @@ import (
 )
 
 var p = &plugin.Plugin{
-	ID:      "http-scanner",
-	Name:    "Http Scanner",
-	Type:    plugin.PluginScanner,
-	State:   types.StateStopped,
-	Widgets: map[string]*plugin.Widget{},
+	ID:    "http-scanner",
+	Name:  "Http Scanner",
+	Type:  plugin.PluginScanner,
+	State: types.StateStopped,
 }
 
 func main() {

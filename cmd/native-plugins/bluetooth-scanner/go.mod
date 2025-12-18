@@ -3,7 +3,7 @@ module bluetooth-scanner
 go 1.25.4
 
 require (
-	github.com/Bastien2203/go-home v1.4.4
+	github.com/Bastien2203/go-home v1.4.6
 	tinygo.org/x/bluetooth v0.13.0
 )
 
