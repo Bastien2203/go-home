@@ -10,7 +10,7 @@ import (
 	"tinygo.org/x/bluetooth"
 )
 
-var BthomeUUID = bluetooth.New16BitUUID(uint16(bthomev2.ServiceDataUUID)).String()
+var BthomeUUID = bluetooth.New16BitUUID(uint16(bthomev2.ServiceDataUUID))
 
 type BthomeParser struct{}
 
@@ -20,6 +20,10 @@ func NewBthomeParser() *BthomeParser {
 
 func (d *BthomeParser) Name() string {
 	return "bthome"
+}
+
+func (d *BthomeParser) CanParse() bool {
+	return true
 }
 
 func (d *BthomeParser) Parse(payload []byte) ([]*types.Capability, error) {

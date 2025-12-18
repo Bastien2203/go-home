@@ -84,15 +84,20 @@ func (s *BluetoothScanner) scanLoop() {
 		cacheHash := bytes.Buffer{}
 		protocols := make([]string, 0)
 		for _, svc := range device.ServiceData() {
+			protocol, ok := ProtocolList[svc.UUID]
+			if !ok {
+				continue
+			}
+
+			protocols = append(protocols, protocol.Name())
+
 			if len(svc.Data) == 0 {
 				continue
 			}
 
-			protocol, ok := ProtocolList[svc.UUID.String()]
-			if !ok {
+			if !protocol.CanParse() {
 				continue
 			}
-			protocols = append(protocols, protocol.Name())
 
 			capabilities, err := protocol.Parse(svc.Data)
 			if err != nil {
@@ -101,6 +106,23 @@ func (s *BluetoothScanner) scanLoop() {
 			}
 			data = append(data, capabilities...)
 			cacheHash.Write(svc.Data)
+		}
+
+		for _, mData := range device.ManufacturerData() {
+			ManufacturerProtocols, ok := ManufacturerProtocols[mData.CompanyID]
+			if !ok {
+				continue
+			}
+
+			protocols = append(protocols, ManufacturerProtocols.Name())
+
+			if len(mData.Data) == 0 {
+				continue
+			}
+
+			if !ManufacturerProtocols.CanParse() {
+				continue
+			}
 		}
 
 		address := device.Address.String()
