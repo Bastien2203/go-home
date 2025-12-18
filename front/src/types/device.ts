@@ -6,7 +6,6 @@ export interface Device {
   name: string;
   address: string;
   address_type: "ble" | string;
-  protocol: string;
   adapter_ids: string[];
   created_at: string;
   capabilities: Record<CapabilityType, Capability>;
@@ -17,6 +16,6 @@ export interface Device {
 export interface DeviceCreateRequest {
   name: string;
   address: string;
-  protocol: string;
+  address_type: string;
   adapter_ids: string[];
 }

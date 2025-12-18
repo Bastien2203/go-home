@@ -33,11 +33,6 @@ export function useScanners() {
   return { scanners: h.data || [], scannersLoading: h.loading, scannersError: h.error, startScanner, stopScanner};
 }
 
-export function useProtocols() {
-  const h = useApi(api.getProtocols);
-  return { protocols: h.data || [], loading: h.loading };
-}
-
 export function useDevices() {
   const h = useApi(api.getDevices);
 

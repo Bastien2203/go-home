@@ -108,7 +108,7 @@ func (h *HomekitAdapter) onDeviceData(data types.DeviceStateUpdate) {
 
 	// Check if this capability forces a structure change
 	// If so, rebuild accessory and schedule server reload
-	if changed := h.updateDeviceStructure(data.DeviceID, data.DeviceName, data.DeviceProtocol, newCap); changed {
+	if changed := h.updateDeviceStructure(data.DeviceID, data.DeviceName, newCap); changed {
 		log.Printf("[HomeKit] New capability detected: %s for device %s", data.CapabilityType, data.DeviceID)
 		h.scheduleReload()
 	}
@@ -128,7 +128,7 @@ func (h *HomekitAdapter) onDeviceRegistered(dev types.Device) {
 
 	log.Printf("[HomeKit] Device registered : %s", dev.ID)
 
-	if changed := h.updateDeviceStructure(dev.ID, dev.Name, dev.Protocol, dev.Capabilities); changed {
+	if changed := h.updateDeviceStructure(dev.ID, dev.Name, dev.Capabilities); changed {
 		h.scheduleReload()
 	}
 }
@@ -145,7 +145,7 @@ func (h *HomekitAdapter) onDeviceUnregistered(dev types.Device) {
 	h.scheduleReload()
 }
 
-func (h *HomekitAdapter) updateDeviceStructure(deviceID, name, protocol string, capabilities map[types.CapabilityType]*types.Capability) bool {
+func (h *HomekitAdapter) updateDeviceStructure(deviceID, name string, capabilities map[types.CapabilityType]*types.Capability) bool {
 	if _, exists := h.knownCaps[deviceID]; !exists {
 		h.knownCaps[deviceID] = make(map[types.CapabilityType]bool)
 	}
@@ -182,19 +182,19 @@ func (h *HomekitAdapter) updateDeviceStructure(deviceID, name, protocol string, 
 	// If changes detected OR device is missing from accessories, rebuild it
 	_, accExists := h.accessories[deviceID]
 	if !accExists || hasChanges {
-		h.accessories[deviceID] = h.rebuildAccessory(deviceID, name, protocol)
+		h.accessories[deviceID] = h.rebuildAccessory(deviceID, name)
 		return true
 	}
 
 	return false
 }
 
-func (h *HomekitAdapter) rebuildAccessory(deviceID, name, protocol string) *accessory.A {
+func (h *HomekitAdapter) rebuildAccessory(deviceID, name string) *accessory.A {
 	info := accessory.Info{
 		Name:         name,
 		SerialNumber: deviceID,
 		Manufacturer: "GoHome",
-		Model:        protocol,
+		Model:        "",
 		Firmware:     "1.0.0",
 	}
 	acc := accessory.New(info, accessory.TypeSensor)

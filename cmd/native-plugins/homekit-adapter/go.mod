@@ -3,7 +3,7 @@ module homekit-adapter
 go 1.25.4
 
 require (
-	github.com/Bastien2203/go-home v1.4.6
+	github.com/Bastien2203/go-home v1.5.1
 	github.com/brutella/hap v0.0.35
 )
 

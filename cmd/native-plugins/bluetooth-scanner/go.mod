@@ -3,12 +3,12 @@ module bluetooth-scanner
 go 1.25.4
 
 require (
-	github.com/Bastien2203/go-home v1.4.6
+	github.com/Bastien2203/bthomev2 v1.0.0
+	github.com/Bastien2203/go-home v1.5.1
 	tinygo.org/x/bluetooth v0.13.0
 )
 
 require (
-	github.com/Bastien2203/bthomev2 v1.0.0 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.0 // indirect

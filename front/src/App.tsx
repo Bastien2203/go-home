@@ -1,6 +1,6 @@
 import { Activity, Bluetooth, Network, Plus } from "lucide-react";
 import { CreateDeviceForm } from "./components/domain/device/CreateDeviceForm";
-import { useAdapters, useScanners, useDevices, useProtocols } from "./hooks/useDomain";
+import { useAdapters, useScanners, useDevices } from "./hooks/useDomain";
 
 import { Header } from "./components/Header";
 import { FloatingButton } from "./components/atoms/FloatingButton";
@@ -18,7 +18,7 @@ const App = () => {
   const { adapters, adaptersLoading, adaptersError, startAdapter, stopAdapter } = useAdapters();
   const { scanners, scannersLoading, scannersError, startScanner, stopScanner } = useScanners();
   const { devices, createDevice, linkAdapter, unlinkAdapter, devicesLoading, devicesError, deleteDevice } = useDevices();
-  const { protocols } = useProtocols();
+
 
   const [selectedBluetoothDeviceMeta, setSelectedBluetoothDeviceMeta] = useState<{ name: string, address: string }>()
   const [isDeviceCreationModalOpen, setDeviceCreationModalOpen] = useState(false);
@@ -93,7 +93,6 @@ const App = () => {
               })
             }}
             adapters={adapters}
-            protocols={protocols}
           />
         </Modal>
 

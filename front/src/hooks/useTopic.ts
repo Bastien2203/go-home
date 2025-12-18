@@ -15,7 +15,7 @@ export const useTopic = <T> (topic: Topic, onMessage: (msg: T) => void) => {
     socketRef.current = ws;
 
     ws.onopen = () => {
-      console.log(`Connecté au WS, abonnement au topic : ${topic}`);
+      console.log(`Connected to WS, subscribe to topic : ${topic}`);
       setIsConnected(true);
 
       const payload = {

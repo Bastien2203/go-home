@@ -1,7 +1,7 @@
 github.com/Bastien2203/bthomev2 v1.0.0 h1:aa789TJKeUfTpsgdgZqW2pJzSZ8qTw50XmCCMBr6mfY=
 github.com/Bastien2203/bthomev2 v1.0.0/go.mod h1:4x5OfAJHGfkmh/IxlAxYSSJ63lwS95KxDKTffEiLrms=
-github.com/Bastien2203/go-home v1.4.6 h1:fR9hP5p9X8KiDjynlu7BuIhd/d9lsHePT6zq1iBZs+E=
-github.com/Bastien2203/go-home v1.4.6/go.mod h1:QeHJYZdA6f3O5Be3ODud74+IgL3qt3ZgPNiO5lCpNsM=
+github.com/Bastien2203/go-home v1.5.1 h1:RCRmb/diepv9dQiym58r4O9jDI3B9S06CNx5YB6txbM=
+github.com/Bastien2203/go-home v1.5.1/go.mod h1:QeHJYZdA6f3O5Be3ODud74+IgL3qt3ZgPNiO5lCpNsM=
 github.com/brutella/dnssd v1.2.14 h1:qLpTnRTm5peo2jA30hqMIbCuWn8x3sFg3e9o9ODOobw=
 github.com/brutella/dnssd v1.2.14/go.mod h1:tG4GE8orv6+irE5rdsNgb6MJSxm6cyMUKdC5jmD22gk=
 github.com/brutella/hap v0.0.35 h1:9J6jWnrlnZGJIdskYdkRt8EGfEoIe2sMqc6qBNQTnAM=

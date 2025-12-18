@@ -1,11 +1,9 @@
 import React, { useState } from "react";
 import type { Adapter } from "../../../types/adapter";
 import type { DeviceCreateRequest } from "../../../types/device";
-import type { Protocol } from "../../../types/protocol";
 
 interface Props {
   onSubmit: (req: DeviceCreateRequest) => void;
-  protocols: Protocol[];
   adapters: Adapter[];
   defaultData?: {
     name?: string;
@@ -18,13 +16,13 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
   const [formData, setFormData] = useState({
     name: props.defaultData?.name ?? "",
     address: props.defaultData?.address ?? "",
-    protocol: props.protocols.length > 0 ? props.protocols[0].id : "",
+    address_type: "ble",
     adapter_ids: [] as string[],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.protocol) return alert("Please select a protocol");
+    if (!formData.address_type) return alert("Please select an address type");
     props.onSubmit(formData);
     setFormData({ ...formData, name: "", address: "" }); // Reset partiel
   };
@@ -71,17 +69,15 @@ export const CreateDeviceForm: React.FC<Props> = (props: Props) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Protocol</label>
+          <label className="block text-sm font-medium text-gray-700">Address Type</label>
           <select
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
-            value={formData.protocol}
-            onChange={(e) => setFormData({ ...formData, protocol: e.target.value })}
+            value={formData.address_type}
+            onChange={(e) => setFormData({ ...formData, address_type: e.target.value })}
           >
-            {props.protocols.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+              <option key="ble" value="ble">
+                Bluetooth
               </option>
-            ))}
           </select>
         </div>
 

@@ -9,20 +9,12 @@ import (
 	"os/signal"
 
 	"github.com/Bastien2203/go-home/internal/core"
-	"github.com/Bastien2203/go-home/internal/protocols"
 	"github.com/Bastien2203/go-home/internal/repository"
 	"github.com/Bastien2203/go-home/internal/server"
 	"github.com/Bastien2203/go-home/internal/websockets"
 	"github.com/Bastien2203/go-home/shared/config"
 	"github.com/Bastien2203/go-home/shared/events"
 )
-
-func setupProtocols(kernel *core.Kernel) {
-	dummyParser := protocols.NewHttpParser()
-	bthomeParser := protocols.NewBthomeParser()
-	kernel.RegisterProtocol(dummyParser)
-	kernel.RegisterProtocol(bthomeParser)
-}
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -56,9 +48,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create kernel: %v", err)
 	}
-
-	// TODO: handle protocols as plugin
-	setupProtocols(kernel)
 
 	wsHub := websockets.NewHub()
 	go wsHub.Run()

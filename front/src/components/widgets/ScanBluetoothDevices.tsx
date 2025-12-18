@@ -7,12 +7,12 @@ import { Plus } from "lucide-react"
 export const ScanBluetoothDevices = (props: {
     onConnect: (name: string, address: string) => void
 }) => {
-    const [bluetoothDevices, setBluetoothDevices] = useState<Record<string, string>>({})
+    const [bluetoothDevices, setBluetoothDevices] = useState<Record<string, BluetoothDeviceMessage>>({})
 
     const onMessage = (msg: BluetoothDeviceMessage) => {
         setBluetoothDevices((prev) => ({
             ...prev,
-            [msg.address]: msg.name
+            [msg.address]: {...msg}
         }))
     }
 
@@ -30,6 +30,9 @@ export const ScanBluetoothDevices = (props: {
                 <th scope="col" className="sticky top-0 z-10 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Address
                 </th>
+                <th scope="col" className="sticky top-0 z-10 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Protocols
+                </th>
                 <th scope="col" className="sticky top-0 z-10 bg-gray-50 px-6 py-3">
                     <span className="sr-only">Action</span>
                 </th>
@@ -38,11 +41,11 @@ export const ScanBluetoothDevices = (props: {
 
         <tbody className="bg-white divide-y divide-gray-200">
             {devicesList.length > 0 ? (
-                devicesList.map(([address, name]) => (
+                devicesList.map(([address, device]) => (
                     <tr key={`bt-${address.replace(/:/g, '_')}`} className="h-[3em]">
                         <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
-                                {name || "Inconnu"}
+                                {device.name || "Inconnu"}
                             </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -50,8 +53,13 @@ export const ScanBluetoothDevices = (props: {
                                 {address}
                             </div>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            {
+                                device.protocols.join(", ") || "Unknown"
+                            }
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end">
-                            <button className="bg-primary-600 p-1 rounded cursor-pointer hover:opacity-80" title="Create device" onClick={() => props.onConnect(name, address)}>
+                            <button className="bg-primary-600 p-1 rounded cursor-pointer hover:opacity-80" title="Create device" onClick={() => props.onConnect(device.name, address)}>
                                 <Plus className="cursor-pointer text-white" size={16}/>
                             </button>
                         </td>

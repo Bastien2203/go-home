@@ -1,6 +1,5 @@
 import type { Adapter } from "../types/adapter";
 import type { Device, DeviceCreateRequest } from "../types/device";
-import type { Protocol } from "../types/protocol";
 import type { Scanner } from "../types/scanner";
 import type { User } from "../types/user";
 
@@ -20,7 +19,6 @@ export class ApiService {
     // Bindings
     this.getAdapters = this.getAdapters.bind(this);
     this.getScanners = this.getScanners.bind(this);
-    this.getProtocols = this.getProtocols.bind(this);
     this.getDevices = this.getDevices.bind(this);
     this.createDevice = this.createDevice.bind(this);
     this.deleteDevice = this.deleteDevice.bind(this);
@@ -65,10 +63,6 @@ export class ApiService {
 
   async getScanners(): Promise<Scanner[]> {
     return this.getJson<Scanner[]>("/scanners");
-  }
-
-  async getProtocols(): Promise<Protocol[]> {
-    return this.getJson<Protocol[]>("/protocols");
   }
 
   async getDevices(): Promise<Device[]> {

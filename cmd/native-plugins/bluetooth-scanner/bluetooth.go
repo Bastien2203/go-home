@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -81,18 +80,27 @@ func (s *BluetoothScanner) scanLoop() {
 			return
 		}
 
-		serviceData := make(types.BluetoothAdvertisement, len(device.ServiceData()))
+		data := make([]*types.Capability, 0, len(device.ServiceData()))
+		cacheHash := bytes.Buffer{}
+		protocols := make([]string, 0)
 		for _, svc := range device.ServiceData() {
 			if len(svc.Data) == 0 {
 				continue
 			}
-			serviceData[svc.UUID.String()] = svc.Data
-		}
 
-		newDataBytes, err := json.Marshal(serviceData)
-		if err != nil {
-			log.Printf("[Bluetooth Scanner] Failed to marshal: %v", err)
-			return
+			protocol, ok := ProtocolList[svc.UUID.String()]
+			if !ok {
+				continue
+			}
+			protocols = append(protocols, protocol.Name())
+
+			capabilities, err := protocol.Parse(svc.Data)
+			if err != nil {
+				log.Printf("Error parsing service data for UUID %s: %v", svc.UUID.String(), err)
+				continue
+			}
+			data = append(data, capabilities...)
+			cacheHash.Write(svc.Data)
 		}
 
 		address := device.Address.String()
@@ -108,9 +116,10 @@ func (s *BluetoothScanner) scanLoop() {
 		shouldSendRawData := false
 		shouldSendMeta := false
 
-		if !bytes.Equal(entry.lastData, newDataBytes) || now.Sub(entry.lastSeen) > EVENT_DATA_INTERVAL {
+		cacheBytes := cacheHash.Bytes()
+		if !bytes.Equal(entry.lastData, cacheBytes) || now.Sub(entry.lastSeen) > EVENT_DATA_INTERVAL {
 			shouldSendRawData = true
-			entry.lastData = newDataBytes
+			entry.lastData = cacheBytes
 			entry.lastSeen = now
 		}
 
@@ -122,11 +131,12 @@ func (s *BluetoothScanner) scanLoop() {
 
 		if s.eventBus != nil {
 			if shouldSendRawData {
+
 				s.eventBus.Publish(events.Event{
-					Type: events.RawDataReceived,
-					Payload: &types.RawData{
+					Type: events.ParsedDataReceived,
+					Payload: &types.ParsedData{
 						Address:     address,
-						Data:        newDataBytes,
+						Data:        data,
 						Timestamp:   now,
 						AddressType: types.BLEAddress,
 					},
@@ -137,8 +147,9 @@ func (s *BluetoothScanner) scanLoop() {
 				s.eventBus.Publish(events.Event{
 					Type: events.BluetoothDeviceFound,
 					Payload: &BluetoothDevice{
-						Name:    device.LocalName(),
-						Address: address,
+						Name:      device.LocalName(),
+						Address:   address,
+						Protocols: protocols,
 					},
 				})
 			}
@@ -170,6 +181,7 @@ func (s *BluetoothScanner) Stop() error {
 }
 
 type BluetoothDevice struct {
-	Name    string `json:"name"`
-	Address string `json:"address"`
+	Name      string   `json:"name"`
+	Address   string   `json:"address"`
+	Protocols []string `json:"protocols"`
 }
