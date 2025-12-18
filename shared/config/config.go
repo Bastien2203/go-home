@@ -1,11 +1,16 @@
 package config
 
 type Config struct {
-	BrokerUrl     string `env:"BROKER_URL, required"`
+	BrokerUrl     string `env:"BROKER_URL,required"`
 	SqliteDbPath  string `env:"SQLITE_DB_PATH,required"`
 	ApiPort       int    `env:"API_PORT,default=8080"`
-	SessionSecret string `env:"SESSION_SECRET"`
+	SessionSecret string `env:"SESSION_SECRET,required"`
 	AppEnv        AppEnv `env:"ENV,default=dev"`
+}
+
+type PluginConfig struct {
+	BrokerUrl string `env:"BROKER_URL,required"`
+	AppEnv    AppEnv `env:"ENV,default=dev"`
 }
 
 type AppEnv string

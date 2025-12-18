@@ -28,6 +28,24 @@ func LoadFromEnv(ctx context.Context) *Config {
 	return cfg
 }
 
+func LoadFromEnvPlugin(ctx context.Context) *PluginConfig {
+	env := os.Getenv("ENV")
+
+	// No .env file for productions
+	if env != string(Production) {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
+
+	cfg := &PluginConfig{}
+	if err := envconfig.Process(ctx, cfg); err != nil {
+		log.Fatalf("%+v\n", err)
+	}
+	return cfg
+}
+
 func IsDebug() bool {
 	return os.Getenv("DEBUG") == "true"
 }
