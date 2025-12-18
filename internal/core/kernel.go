@@ -2,9 +2,7 @@ package core
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 
 	"gohome/shared/events"
 	"gohome/shared/plugin"
@@ -23,7 +21,6 @@ type Kernel struct {
 	muLock        sync.Mutex
 	pluginManager *PluginManager
 	processes     map[string]*exec.Cmd
-	pMu           sync.Mutex
 }
 
 func NewKernel(eventBus *events.EventBus, repository DeviceRepository) (*Kernel, error) {
@@ -111,71 +108,6 @@ func (k *Kernel) deleteMutex(deviceID string) {
 	k.muLock.Lock()
 	defer k.muLock.Unlock()
 	delete(k.mu, deviceID)
-}
-
-func (k *Kernel) LoadPlugins(dir string) error {
-	files, err := os.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-		info, err := f.Info()
-		if err == nil {
-			if info.Mode()&0111 == 0 {
-				log.Printf("Ignore file %s: non executable", f.Name())
-				continue
-			}
-		}
-
-		fileName := f.Name()
-		fullPath := filepath.Join(dir, fileName)
-
-		cmd := exec.Command(fullPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		k.pMu.Lock()
-		k.processes[fileName] = cmd
-		k.pMu.Unlock()
-
-		go func(name string, c *exec.Cmd) {
-			defer func() {
-				k.pMu.Lock()
-				delete(k.processes, name)
-				k.pMu.Unlock()
-			}()
-
-			log.Printf("[%s] Starting...", name)
-			if err := c.Run(); err != nil {
-				log.Printf("[%s] Stopped or Error: %v", name, err)
-				return
-			}
-			log.Printf("[%s] Finished naturally", name)
-		}(fileName, cmd)
-	}
-	return nil
-}
-
-func (k *Kernel) UnloadPlugins() {
-	k.pMu.Lock()
-	defer k.pMu.Unlock()
-
-	log.Println("Unloading all plugins...")
-
-	for name, cmd := range k.processes {
-		if cmd.Process != nil {
-			log.Printf("Signaling %s to stop...", name)
-			err := cmd.Process.Signal(os.Interrupt)
-
-			if err != nil {
-				log.Printf("Failed to kill %s: %v", name, err)
-			}
-		}
-	}
 }
 
 // --- Scanners Management ---

@@ -76,8 +76,6 @@ func main() {
 		log.Fatalf("Failed to subscribe to event topic bluetooth discovery: %v", err)
 	}
 
-	kernel.LoadPlugins(cfg.PluginFolderPath)
-
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 	<-sigChan
@@ -87,9 +85,6 @@ func main() {
 
 	fmt.Println("Stopping adapters...")
 	kernel.StopAdapters()
-
-	fmt.Println("Unloading plugins...")
-	kernel.UnloadPlugins()
 
 	fmt.Println("\nShutting down...")
 }

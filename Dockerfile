@@ -19,11 +19,9 @@ ARG TARGETPLATFORM
 RUN apt-get update && apt-get install -y clang lld
 RUN xx-apt-get install -y \
     gcc \
-    libbluetooth-dev \
     libsqlite3-dev \
     libc6-dev \
-    pkg-config \
-    libdbus-1-dev
+    pkg-config 
 
 
 COPY go.mod go.sum ./
@@ -33,31 +31,16 @@ COPY . .
 
 RUN CGO_ENABLED=1 xx-go build -o /app/core .
 
-RUN mkdir -p /app/bin && \
-    for dir in /app/cmd/native-plugins/*; do \
-        name=$(basename "$dir"); \
-        if [ -d "$dir" ]; then \
-            echo "Building $name..."; \
-            CGO_ENABLED=1 xx-go build -o /app/bin/"$name" "$dir"/. ; \
-        fi \
-    done
-
-
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    bluez \
-    libbluetooth3 \
-    dbus \
-    libdbus-1-3 \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 COPY --from=node-builder /app/dist ./dist
 COPY --from=go-builder /app/core ./core
-COPY --from=go-builder /app/bin ./bin
 
 RUN chmod +x ./core
 
