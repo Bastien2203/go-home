@@ -29,9 +29,6 @@ jobs:
           - image_name: "homekit-adapter"
             dockerfile: "./Dockerfile-plugins"
             context: "cmd/native-plugins/homekit-adapter"
-          - image_name: "http-scanner"
-            dockerfile: "./Dockerfile-plugins"
-            context: "cmd/native-plugins/http-scanner"
 
     steps:
       - uses: actions/checkout@v4

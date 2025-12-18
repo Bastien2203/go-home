@@ -54,7 +54,7 @@ export const DeviceList = (props: Props) => {
               </div>
             </td>
             <td className="px-6 py-4 whitespace-nowrap">
-              {device.protocol}
+              {device.address_type}
             </td>
             <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2 justify-end">
               <div className="bg-primary-600 p-1 rounded cursor-pointer hover:opacity-80" title="Open" onClick={() => props.onDeviceSelected(device)}>
