@@ -14,7 +14,7 @@ func LoadFromEnv(ctx context.Context) *Config {
 	env := os.Getenv("ENV")
 
 	// No .env file for productions
-	if env != "PROD" {
+	if env != string(Production) {
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatal("Error loading .env file")

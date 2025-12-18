@@ -5,7 +5,7 @@ type Config struct {
 	SqliteDbPath  string `env:"SQLITE_DB_PATH,required"`
 	ApiPort       int    `env:"API_PORT,default=8080"`
 	SessionSecret string `env:"SESSION_SECRET"`
-	AppEnv        AppEnv `env:"APP_ENV,default=dev"`
+	AppEnv        AppEnv `env:"ENV,default=dev"`
 }
 
 type AppEnv string
