@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
-	"gohome/shared/config"
-	"gohome/shared/events"
-	"gohome/shared/plugin"
-	"gohome/shared/types"
+
 	"log"
+
+	"github.com/Bastien2203/go-home/shared/config"
+	"github.com/Bastien2203/go-home/shared/events"
+	"github.com/Bastien2203/go-home/shared/plugin"
+	"github.com/Bastien2203/go-home/shared/types"
 )
 
 var p = &plugin.Plugin{
@@ -29,7 +31,7 @@ var p = &plugin.Plugin{
 
 func main() {
 	ctx := context.Background()
-	cfg := config.LoadFromEnv(ctx)
+	cfg := config.LoadFromEnvPlugin(ctx)
 
 	eventBus, err := events.NewEventBus(cfg.BrokerUrl, p.ID)
 	if err != nil {

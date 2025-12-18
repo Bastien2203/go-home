@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"gohome/shared/events"
-	"gohome/shared/types"
-	"gohome/utils"
+
 	"log"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/Bastien2203/go-home/shared/events"
+	"github.com/Bastien2203/go-home/shared/types"
+	"github.com/Bastien2203/go-home/utils"
 	"github.com/brutella/hap"
 	"github.com/brutella/hap/accessory"
 	"github.com/brutella/hap/characteristic"

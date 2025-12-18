@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gohome/shared/events"
-	"gohome/shared/types"
+
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/Bastien2203/go-home/shared/events"
+	"github.com/Bastien2203/go-home/shared/types"
 )
 
 type HTTPScanner struct {

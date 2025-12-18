@@ -37,7 +37,6 @@ services:
       - ./data:/app/data
     restart: unless-stopped
     environment:
-      - TZ=Europe/Paris
       - BROKER_URL=tcp://mqtt:1883
       - SQLITE_DB_PATH=./data/gohome.db
       - API_PORT=9880
@@ -80,10 +79,8 @@ gohome-bluetooth:
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
     environment:
-      - TZ=Europe/Paris
       - BROKER_URL=tcp://localhost:1883
       - ENV=production
-      - SQLITE_DB_PATH=./data/gohome.db
       - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
 ```
 
@@ -105,10 +102,8 @@ Expose devices to Apple Homekit. Requires host network access (for mDNS).
       - ./homekit_data:/homekit_data
     restart: unless-stopped
     environment:
-      - TZ=Europe/Paris
       - BROKER_URL=tcp://localhost:1883
       - ENV=production
-      - SQLITE_DB_PATH=./data/gohome.db
       - INTERNET_INTERFACE=wlan0 # change to your internet-facing interface
 ```
 
