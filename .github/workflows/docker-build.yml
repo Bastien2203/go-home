@@ -22,12 +22,16 @@ jobs:
         include:
           - image_name: "core"
             dockerfile: "./Dockerfile"
+            context: "."
           - image_name: "bluetooth-scanner"
             dockerfile: "./Dockerfile-plugins"
+            context: "cmd/native-plugins/bluetooth-scanner"
           - image_name: "homekit-adapter"
             dockerfile: "./Dockerfile-plugins"
+            context: "cmd/native-plugins/homekit-adapter"
           - image_name: "http-scanner"
             dockerfile: "./Dockerfile-plugins"
+            context: "cmd/native-plugins/http-scanner"
 
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +63,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true

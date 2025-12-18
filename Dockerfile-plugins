@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o service ./cmd/native-plugins/$plugin_name
+RUN CGO_ENABLED=0 GOOS=linux go build -o service .
 
 
 FROM scratch
