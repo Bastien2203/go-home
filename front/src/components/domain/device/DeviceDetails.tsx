@@ -52,7 +52,7 @@ export const DeviceDetails = ({ adapters, device, onLink, onUnlink }: Props) => 
                     <div className="space-y-2">
                         <DetailRow icon={<Hash size={16} />} label="Id" value={device.id} />
                         <DetailRow icon={<ChevronsLeftRightEllipsis size={16} />} label="Adress" value={device.address} />
-                        <DetailRow icon={<ArrowDownUp size={16} />} label="Protocol" value={device.protocol} />
+                        <DetailRow icon={<ArrowDownUp size={16} />} label="Protocol" value={device.address_type} />
                         <DetailRow icon={<Radio size={16} />} label="Address Type" value={device.address_type} />
                         <DetailRow icon={<CalendarDays size={16} />} label="Created" value={formatDatetime(device.created_at)} />
                         <DetailRow icon={<Clock size={16} />} label="Last update" value={formatDatetime(device.last_updated)} />
