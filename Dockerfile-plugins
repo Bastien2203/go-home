@@ -2,12 +2,14 @@ FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
+ARG plugin_name
+
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o service .
+RUN CGO_ENABLED=0 GOOS=linux go build -o service ./cmd/native-plugins/$plugin_name
 
 
 FROM scratch
