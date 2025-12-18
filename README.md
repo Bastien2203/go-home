@@ -27,7 +27,7 @@ services:
     
   gohome-core:
     mem_limit: 50m
-    image: ghcr.io/bastien2203/go-home-core:main
+    image: ghcr.io/bastien2203/go-home-core:latest
     container_name: gohome-core
     ports:
       - "9880:9880"
@@ -57,14 +57,6 @@ persistence_location /mosquitto/data/
 log_dest file /mosquitto/log/mosquitto.log
 ```
 
-### Configuration
-
-- BROKER_URL : MQTT broker url (e.g. tcp://mqtt:1883)
-- SQLITE_DB_PATH : path to sqlite database file
-- API_PORT : port for core api server
-- SESSION_SECRET : secret used to sign session cookies
-- APP_ENV / ENV : set to PROD for production mode
-
 
 ### 2. Add Plugins (Optional)
 
@@ -77,7 +69,7 @@ Scans for BLE devices. Requires host network access.
 ```yaml
 gohome-bluetooth:
     mem_limit: 50m
-    image: ghcr.io/bastien2203/go-home-bluetooth-scanner:main
+    image: ghcr.io/bastien2203/go-home-bluetooth-scanner:latest
     container_name: gohome-bluetooth
     network_mode: host
     privileged: true
@@ -102,7 +94,7 @@ Expose devices to Apple Homekit. Requires host network access (for mDNS).
 ```yaml
   gohome-homekit:
     mem_limit: 50m
-    image: ghcr.io/bastien2203/go-home-homekit-adapter:main
+    image: ghcr.io/bastien2203/go-home-homekit-adapter:latest
     container_name: gohome-homekit
     network_mode: host
     privileged: true
@@ -133,9 +125,10 @@ Expose devices to Apple Homekit. Requires host network access (for mDNS).
 | INTERNET_INTERFACE | Network interface for mDNS | `wlan0` or `eth0` |
 
 ## TODO
-- auto restart scanner / adapter that are used by registered device
+- auto restart scanner used by registered device
 - homekit qr code
 - influx db adapter
+- Make core a go plugin, so gohome plugins can have a independant go.mod
 
 
 
