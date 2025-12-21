@@ -144,7 +144,6 @@ func (s *BluetoothScanner) scanLoop() {
 		now := time.Now()
 
 		if s.eventBus != nil {
-			fmt.Println("Publishing parsed data for device:", device.LocalName(), "Address:", address)
 			s.eventBus.Publish(events.Event{
 				Type: events.ParsedDataReceived,
 				Payload: &types.ParsedData{
