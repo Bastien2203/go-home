@@ -9,7 +9,7 @@ import (
 
 type Protocol interface {
 	Name() string
-	Parse(payload []byte) ([]*types.Capability, error)
+	Parse(address string, payload []byte) ([]*types.Capability, error)
 	CanParse() bool
 }
 

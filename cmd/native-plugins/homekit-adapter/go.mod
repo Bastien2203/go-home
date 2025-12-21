@@ -3,12 +3,11 @@ module homekit-adapter
 go 1.25.4
 
 require (
-	github.com/Bastien2203/go-home v1.5.1
+	github.com/Bastien2203/go-home v1.5.5
 	github.com/brutella/hap v0.0.35
 )
 
 require (
-	github.com/Bastien2203/bthomev2 v1.0.0 // indirect
 	github.com/brutella/dnssd v1.2.14 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
 	github.com/go-chi/chi v1.5.5 // indirect

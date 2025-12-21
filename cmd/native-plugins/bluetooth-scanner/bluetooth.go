@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bluetooth-scanner/utils"
 	"fmt"
 	"log"
 	"time"
 
-	bthomev2_types "github.com/Bastien2203/bthomev2/types"
 	"github.com/Bastien2203/go-home/shared/events"
 	"github.com/Bastien2203/go-home/shared/types"
 	"tinygo.org/x/bluetooth"
@@ -26,7 +26,6 @@ type BluetoothScanner struct {
 	adapter       *bluetooth.Adapter
 	onStateChange func(state types.State)
 	started       bool
-	cache         map[string]*deviceCacheEntry
 }
 
 func NewBluetoothScanner(eventBus *events.EventBus, onStateChange func(state types.State)) *BluetoothScanner {
@@ -40,7 +39,6 @@ func NewBluetoothScanner(eventBus *events.EventBus, onStateChange func(state typ
 		adapter:       adapter,
 		onStateChange: onStateChange,
 		started:       false,
-		cache:         make(map[string]*deviceCacheEntry),
 	}
 }
 
@@ -94,30 +92,13 @@ func (s *BluetoothScanner) scanLoop() {
 				continue
 			}
 
-			capabilities, err := protocol.Parse(svc.Data)
+			capabilities, err := protocol.Parse(device.Address.String(), svc.Data)
 			if err != nil {
-				log.Printf("Error parsing service data for UUID %s: %v", svc.UUID.String(), err)
-				continue
-			}
-
-			if protocol.Name() == "bthome" {
-				var packetId uint8
-				for _, m := range capabilities {
-					if m.Name == types.CapabilityType(bthomev2_types.PacketID) {
-						packetId = uint8(m.Value.(float64))
-					}
-				}
-
-				cacheEntry, found := s.cache[device.Address.String()]
-				if found && cacheEntry.packetId == packetId {
-					// Duplicate packet, ignore
+				if err == utils.DeduplicateBluetoothPackets {
 					return
 				}
-				// Update cache
-				s.cache[device.Address.String()] = &deviceCacheEntry{
-					address:  device.Address.String(),
-					packetId: packetId,
-				}
+				log.Printf("Error parsing service data for UUID %s: %v", svc.UUID.String(), err)
+				continue
 			}
 
 			data = append(data, capabilities...)
@@ -144,15 +125,18 @@ func (s *BluetoothScanner) scanLoop() {
 		now := time.Now()
 
 		if s.eventBus != nil {
-			s.eventBus.Publish(events.Event{
-				Type: events.ParsedDataReceived,
-				Payload: &types.ParsedData{
-					Address:     address,
-					Data:        data,
-					Timestamp:   now,
-					AddressType: types.BLEAddress,
-				},
-			})
+			if len(data) > 0 {
+				fmt.Printf("Publishing event for device (%s) %s with protocols: %v\n", device.LocalName(), address, protocols)
+				s.eventBus.Publish(events.Event{
+					Type: events.ParsedDataReceived,
+					Payload: &types.ParsedData{
+						Address:     address,
+						Data:        data,
+						Timestamp:   now,
+						AddressType: types.BLEAddress,
+					},
+				})
+			}
 
 			s.eventBus.Publish(events.Event{
 				Type: events.BluetoothDeviceFound,

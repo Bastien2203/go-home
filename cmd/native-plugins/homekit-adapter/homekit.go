@@ -354,4 +354,8 @@ var capabilityToHAP = map[types.CapabilityType]struct {
 		characteristicType: characteristic.TypeBatteryLevel,
 		serviceType:        service.TypeBatteryService,
 	},
+	types.CapabilityButtonEvent: {
+		characteristicType: characteristic.TypeProgrammableSwitchEvent,
+		serviceType:        service.TypeStatelessProgrammableSwitch,
+	},
 }
