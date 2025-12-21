@@ -209,6 +209,8 @@ func (h *HomekitAdapter) rebuildAccessory(deviceID, name string) *accessory.A {
 					acc.AddS(service.NewHumiditySensor().S)
 				case service.TypeBatteryService:
 					acc.AddS(service.NewBatteryService().S)
+				case service.TypeStatelessProgrammableSwitch:
+					acc.AddS(service.NewStatelessProgrammableSwitch().S)
 				}
 			}
 		}
