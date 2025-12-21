@@ -126,7 +126,6 @@ func (s *BluetoothScanner) scanLoop() {
 
 		if s.eventBus != nil {
 			if len(data) > 0 {
-				fmt.Printf("Publishing event for device (%s) %s with protocols: %v\n", device.LocalName(), address, protocols)
 				s.eventBus.Publish(events.Event{
 					Type: events.ParsedDataReceived,
 					Payload: &types.ParsedData{

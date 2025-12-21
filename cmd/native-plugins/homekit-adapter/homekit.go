@@ -197,7 +197,17 @@ func (h *HomekitAdapter) rebuildAccessory(deviceID, name string) *accessory.A {
 		Model:        "",
 		Firmware:     "1.0.0",
 	}
-	acc := accessory.New(info, accessory.TypeSensor)
+
+	accType := accessory.TypeSensor
+
+	caps, hasCaps := h.knownCaps[deviceID]
+	if hasCaps {
+		if _, isButton := caps[types.CapabilityButtonEvent]; isButton {
+			accType = accessory.TypeProgrammableSwitch
+		}
+	}
+
+	acc := accessory.New(info, accType)
 
 	if caps, ok := h.knownCaps[deviceID]; ok {
 		for capType := range caps {
@@ -231,7 +241,34 @@ func (h *HomekitAdapter) updateAccessoryValue(acc *accessory.A, data *types.Devi
 
 	char := svc.C(mapping.characteristicType)
 	if char != nil {
-		updateCharacteristic(char, data.Value)
+		if data.CapabilityType == types.CapabilityButtonEvent {
+			// value format: single press = "press", double press = "double_press", long press = "long_press"
+			// HomeKit expects integer values for ProgrammableSwitchEvent:
+			// for hap :  0 = single press, 1 = double press, 2 = long press
+
+			var eventValue int
+			value, ok := data.Value.(string)
+			if !ok {
+				log.Printf("[HomeKit] Invalid button event value type: %T", data.Value)
+				return
+			}
+			switch value {
+			case "press":
+				eventValue = 0
+			case "double_press":
+				eventValue = 1
+			case "long_press":
+				eventValue = 2
+			default:
+				log.Printf("[HomeKit] Unknown button event value: %v", value)
+				return
+			}
+			updateCharacteristic(char, eventValue)
+
+		} else {
+			updateCharacteristic(char, data.Value)
+		}
+
 	}
 }
 

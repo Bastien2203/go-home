@@ -123,6 +123,4 @@ Expose devices to Apple Homekit. Requires host network access (for mDNS).
 - auto restart scanner used by registered device
 - homekit qr code
 - influx db adapter
-
-
-
+- find a way to unify value format in core
