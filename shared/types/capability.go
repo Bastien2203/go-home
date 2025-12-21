@@ -13,6 +13,7 @@ const (
 	CapabilityTemperature CapabilityType = "temperature"
 	CapabilityHumidity    CapabilityType = "humidity"
 	CapabilityBattery     CapabilityType = "battery_level"
+	CapabilityButtonEvent CapabilityType = "button_event"
 )
 
 type ValueType string
