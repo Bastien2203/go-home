@@ -106,16 +106,17 @@ func (s *BluetoothScanner) scanLoop() {
 					if m.Name == types.CapabilityType(bthomev2_types.PacketID) {
 						packetId = uint8(m.Value.(float64))
 					}
-					cacheEntry, found := s.cache[device.Address.String()]
-					if found && cacheEntry.packetId == packetId {
-						// Duplicate packet, ignore
-						return
-					}
-					// Update cache
-					s.cache[device.Address.String()] = &deviceCacheEntry{
-						address:  device.Address.String(),
-						packetId: packetId,
-					}
+				}
+
+				cacheEntry, found := s.cache[device.Address.String()]
+				if found && cacheEntry.packetId == packetId {
+					// Duplicate packet, ignore
+					return
+				}
+				// Update cache
+				s.cache[device.Address.String()] = &deviceCacheEntry{
+					address:  device.Address.String(),
+					packetId: packetId,
 				}
 			}
 
@@ -143,7 +144,7 @@ func (s *BluetoothScanner) scanLoop() {
 		now := time.Now()
 
 		if s.eventBus != nil {
-			fmt.Println("Publishing parsed data for device:", address)
+			fmt.Println("Publishing parsed data for device:", device.LocalName(), "Address:", address)
 			s.eventBus.Publish(events.Event{
 				Type: events.ParsedDataReceived,
 				Payload: &types.ParsedData{
