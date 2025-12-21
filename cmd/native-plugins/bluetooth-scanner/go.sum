@@ -1,7 +1,7 @@
-github.com/Bastien2203/bthomev2 v1.0.0 h1:aa789TJKeUfTpsgdgZqW2pJzSZ8qTw50XmCCMBr6mfY=
-github.com/Bastien2203/bthomev2 v1.0.0/go.mod h1:4x5OfAJHGfkmh/IxlAxYSSJ63lwS95KxDKTffEiLrms=
-github.com/Bastien2203/go-home v1.5.1 h1:RCRmb/diepv9dQiym58r4O9jDI3B9S06CNx5YB6txbM=
-github.com/Bastien2203/go-home v1.5.1/go.mod h1:QeHJYZdA6f3O5Be3ODud74+IgL3qt3ZgPNiO5lCpNsM=
+github.com/Bastien2203/bthomev2 v1.2.0 h1:wqH6dCYeP9uFyN9V2mm8Kxu/A/Qf8MmBFK71K01k7WI=
+github.com/Bastien2203/bthomev2 v1.2.0/go.mod h1:4x5OfAJHGfkmh/IxlAxYSSJ63lwS95KxDKTffEiLrms=
+github.com/Bastien2203/go-home v1.5.3 h1:ARuzBeZ/SLgElTlPS/Dmy5fClIy8g3yJgW6w2znvquw=
+github.com/Bastien2203/go-home v1.5.3/go.mod h1:QeHJYZdA6f3O5Be3ODud74+IgL3qt3ZgPNiO5lCpNsM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

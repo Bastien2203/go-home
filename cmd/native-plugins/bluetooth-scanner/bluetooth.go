@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
+	bthomev2_types "github.com/Bastien2203/bthomev2/types"
 	"github.com/Bastien2203/go-home/shared/events"
 	"github.com/Bastien2203/go-home/shared/types"
 	"tinygo.org/x/bluetooth"
@@ -17,20 +16,17 @@ const (
 	EVENT_DATA_INTERVAL         = time.Minute
 )
 
+type deviceCacheEntry struct {
+	address  string
+	packetId uint8
+}
+
 type BluetoothScanner struct {
 	eventBus      *events.EventBus
 	adapter       *bluetooth.Adapter
 	onStateChange func(state types.State)
 	started       bool
-
-	cache map[string]*deviceCacheEntry
-	mu    sync.RWMutex
-}
-
-type deviceCacheEntry struct {
-	lastData     []byte
-	lastSeen     time.Time
-	lastMetaSent time.Time
+	cache         map[string]*deviceCacheEntry
 }
 
 func NewBluetoothScanner(eventBus *events.EventBus, onStateChange func(state types.State)) *BluetoothScanner {
@@ -81,7 +77,6 @@ func (s *BluetoothScanner) scanLoop() {
 		}
 
 		data := make([]*types.Capability, 0, len(device.ServiceData()))
-		cacheHash := bytes.Buffer{}
 		protocols := make([]string, 0)
 		for _, svc := range device.ServiceData() {
 			protocol, ok := ProtocolList[svc.UUID]
@@ -104,8 +99,27 @@ func (s *BluetoothScanner) scanLoop() {
 				log.Printf("Error parsing service data for UUID %s: %v", svc.UUID.String(), err)
 				continue
 			}
+
+			if protocol.Name() == "bthome" {
+				var packetId uint8
+				for _, m := range capabilities {
+					if m.Name == types.CapabilityType(bthomev2_types.PacketID) {
+						packetId = uint8(m.Value.(float64))
+					}
+					cacheEntry, found := s.cache[device.Address.String()]
+					if found && cacheEntry.packetId == packetId {
+						// Duplicate packet, ignore
+						return
+					}
+					// Update cache
+					s.cache[device.Address.String()] = &deviceCacheEntry{
+						address:  device.Address.String(),
+						packetId: packetId,
+					}
+				}
+			}
+
 			data = append(data, capabilities...)
-			cacheHash.Write(svc.Data)
 		}
 
 		for _, mData := range device.ManufacturerData() {
@@ -128,53 +142,26 @@ func (s *BluetoothScanner) scanLoop() {
 		address := device.Address.String()
 		now := time.Now()
 
-		s.mu.Lock()
-		entry, exists := s.cache[address]
-		if !exists {
-			entry = &deviceCacheEntry{}
-			s.cache[address] = entry
-		}
-
-		shouldSendRawData := false
-		shouldSendMeta := false
-
-		cacheBytes := cacheHash.Bytes()
-		if !bytes.Equal(entry.lastData, cacheBytes) || now.Sub(entry.lastSeen) > EVENT_DATA_INTERVAL {
-			shouldSendRawData = true
-			entry.lastData = cacheBytes
-			entry.lastSeen = now
-		}
-
-		if now.Sub(entry.lastMetaSent) > EVENT_DEVICE_FOUND_INTERVAL {
-			shouldSendMeta = true
-			entry.lastMetaSent = now
-		}
-		s.mu.Unlock()
-
 		if s.eventBus != nil {
-			if shouldSendRawData {
+			fmt.Println("Publishing parsed data for device:", address)
+			s.eventBus.Publish(events.Event{
+				Type: events.ParsedDataReceived,
+				Payload: &types.ParsedData{
+					Address:     address,
+					Data:        data,
+					Timestamp:   now,
+					AddressType: types.BLEAddress,
+				},
+			})
 
-				s.eventBus.Publish(events.Event{
-					Type: events.ParsedDataReceived,
-					Payload: &types.ParsedData{
-						Address:     address,
-						Data:        data,
-						Timestamp:   now,
-						AddressType: types.BLEAddress,
-					},
-				})
-			}
-
-			if shouldSendMeta {
-				s.eventBus.Publish(events.Event{
-					Type: events.BluetoothDeviceFound,
-					Payload: &BluetoothDevice{
-						Name:      device.LocalName(),
-						Address:   address,
-						Protocols: protocols,
-					},
-				})
-			}
+			s.eventBus.Publish(events.Event{
+				Type: events.BluetoothDeviceFound,
+				Payload: &BluetoothDevice{
+					Name:      device.LocalName(),
+					Address:   address,
+					Protocols: protocols,
+				},
+			})
 		}
 	})
 

@@ -6,11 +6,12 @@ import (
 	"log"
 
 	"github.com/Bastien2203/bthomev2"
+	bthomev2_types "github.com/Bastien2203/bthomev2/types"
 	"github.com/Bastien2203/go-home/shared/types"
 	"tinygo.org/x/bluetooth"
 )
 
-var BthomeUUID = bluetooth.New16BitUUID(uint16(bthomev2.ServiceDataUUID))
+var BthomeUUID = bluetooth.New16BitUUID(uint16(bthomev2_types.ServiceDataUUID))
 
 type BthomeParser struct{}
 
@@ -36,36 +37,56 @@ func (d *BthomeParser) Parse(payload []byte) ([]*types.Capability, error) {
 	capabilities := make([]*types.Capability, 0)
 	for _, m := range data {
 		switch v := m.Value.(type) {
-		case bthomev2.NumberValue:
+		case bthomev2_types.NumberValue:
 			capabilities = append(capabilities, &types.Capability{
 				Name:  types.CapabilityType(m.Property),
 				Value: v.Number,
 				Type:  types.TypeFloat,
-				Unit:  types.UnitFromBthome(m.Unit),
+				Unit:  UnitFromBthome(m.Unit),
 			})
-		case bthomev2.BinaryValue:
+		case bthomev2_types.BinaryValue:
 			capabilities = append(capabilities, &types.Capability{
 				Name:  types.CapabilityType(m.Property),
 				Value: v.Boolean,
 				Type:  types.TypeBool,
-				Unit:  types.UnitFromBthome(m.Unit),
+				Unit:  UnitFromBthome(m.Unit),
 			})
-		case bthomev2.TextValue:
+		case bthomev2_types.TextValue:
 			capabilities = append(capabilities, &types.Capability{
 				Name:  types.CapabilityType(m.Property),
 				Value: v.Text,
 				Type:  types.TypeString,
-				Unit:  types.UnitFromBthome(m.Unit),
+				Unit:  UnitFromBthome(m.Unit),
 			})
-		case bthomev2.RawValue:
+		case bthomev2_types.RawValue:
 			capabilities = append(capabilities, &types.Capability{
 				Name:  types.CapabilityType(m.Property),
 				Value: v.Raw,
 				Type:  types.TypeBytes,
-				Unit:  types.UnitFromBthome(m.Unit),
+				Unit:  UnitFromBthome(m.Unit),
+			})
+
+		case bthomev2_types.EventValue:
+			capabilities = append(capabilities, &types.Capability{
+				Name:  types.CapabilityType(m.Property),
+				Value: v.Event,
+				Unit:  UnitFromBthome(m.Unit),
 			})
 		}
 	}
 
 	return capabilities, nil
+}
+
+func UnitFromBthome(u bthomev2_types.Unit) types.Unit {
+	switch u {
+	case bthomev2_types.CelsiusDegree:
+		return types.UnitCelsius
+	case bthomev2_types.Percentage:
+		return types.UnitPercent
+	case bthomev2_types.Volt:
+		return types.UnitVolt
+	default:
+		return types.NoUnit
+	}
 }

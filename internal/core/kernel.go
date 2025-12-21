@@ -57,7 +57,9 @@ func (k *Kernel) handleStateUpdate(parsedData types.ParsedData) {
 		device.Capabilities[c.Name] = c
 	}
 	// TODO : Save updated device (but its too much intensive to do it for each data update)
+	k.repository.Save(device)
 	mu.Unlock()
+	fmt.Printf("Capabilities updated for device %s: %+v\n", device.Name, device.Capabilities)
 
 	for _, adapterID := range device.AdapterIDs {
 		go func(adapterID string) {
