@@ -1,5 +1,5 @@
 homekit_data/
-./gohome.db
+gohome.db
 bin/
 mosquitto/data
 mosquitto/log

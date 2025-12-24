@@ -24,4 +24,5 @@ const (
 	TypeBool   ValueType = "bool"
 	TypeString ValueType = "string"
 	TypeBytes  ValueType = "bytes"
+	TypeEvent  ValueType = "event"
 )
