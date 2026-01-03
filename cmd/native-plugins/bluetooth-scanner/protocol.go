@@ -17,7 +17,7 @@ var ProtocolList = map[bluetooth.UUID]Protocol{
 	protocols.BthomeUUID:           protocols.NewBthomeParser(),
 	bluetooth.New16BitUUID(0x181C): protocols.NewBthomeParser(),
 	bluetooth.New16BitUUID(0xFE95): protocols.NewNotImplementedParser("Xiaomi / Mijia"),
-	bluetooth.New16BitUUID(0xFD3D): protocols.NewNotImplementedParser("SwitchBot"),
+	bluetooth.New16BitUUID(0xFD3D): protocols.NewSwitchBotParser(),
 	bluetooth.New16BitUUID(0xFEAA): protocols.NewNotImplementedParser("Eddystone (Google)"),
 	bluetooth.New16BitUUID(0xFEED): protocols.NewNotImplementedParser("Tile"),
 	bluetooth.New16BitUUID(0xFE2C): protocols.NewNotImplementedParser("Google"),
