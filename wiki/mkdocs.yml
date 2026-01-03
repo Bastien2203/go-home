@@ -1,0 +1,11 @@
+site_name: GoHome Docs
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Plugins:
+    - Bluetooth Scanner: plugins/bluetooth-scanner.md
+    - Homekit Adapter: plugins/homekit-adapter.md
+
+  - Roadmap: roadmap.md

@@ -5,3 +5,4 @@ mosquitto/data
 mosquitto/log
 .env
 ./dist
+go-home.wiki

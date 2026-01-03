@@ -108,16 +108,7 @@ Expose devices to Apple Homekit. Requires host network access (for mDNS).
 ```
 
 
-## ⚙️ Configuration
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| BROKER_URL | MQTT broker URL | `tcp://mqtt:1883` (Bridge) or `tcp://localhost:1883` (Host) |
-| SQLITE_DB_PATH | Path to database file | `./data/gohome.db` |
-| API_PORT | Port for the Core API | `9880` |
-| SESSION_SECRET | Secret for signing cookies | `random_string` |
-| ENV | Environment mode | `production` or `dev` |
-| INTERNET_INTERFACE | Network interface for mDNS | `wlan0` or `eth0` |
 
 ## TODO
 - auto restart scanner used by registered device
