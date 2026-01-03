@@ -1,33 +1,43 @@
-# Roadmap
+# :material-map-marker-path: Roadmap
+
+This document outlines the planned features and improvements for the GoHome ecosystem.
 
 ## Core
 
-- For now we only support temperature, humidity, battery, button event capabilities. Handle more capabilities.
-- auto restart scanner used by registered device, cause actually if we restart core, scanner doesnt restarts
+- [ ] Expanded Capabilities: Support more than just temp/humidity (e.g., Lights, Covers, Switches).
 
-- find a way to unify value format in core, for exemple determine stricts constraint on temperature format (float, int, ...) and avoid scanners to send in an other format.
+- [ ] Auto-Restart Logic: Automatically restart the scanner if a registered device stops responding (currently, scanner restart issues affect core availability).
+
+- [ ] Data Sanitization:
+
+    - [ ] Unify value formats in Core.
+
+    - [ ] Enforce strict constraints (e.g., ensure temperature is always float).
+
+    - [ ] reject malformed payloads from scanners.
 
 ## Homekit Adapter
 
-- Handle every device possible to create with HAP
+- [ ] Device Parity: Handle every device type possible within the HAP (HomeKit Accessory Protocol) spec.
 
-- Find a way to retrieve Homekit QR (or code) from front
+- [ ] Frontend Integration: Retrieve the HomeKit QR code (or PIN) directly from the Core UI instead of container logs.
 
 
 ## Bluetooth Scanner
 
-### Bthome Parser
+### BTHome Parser
 
-- Handle every bthome properties
+- [ ] Handle full BTHome V2 specification (all properties).
 
+### SwitchBot Parser
 
-### Switchbot parser
+- [ ] Handle SwitchBot Bot (finger presser).
 
-- Handle all switchbot device types (only meter handled for now)
+- [ ] Handle SwitchBot Curtain.
 
-
-## New Adapters to implement
-
-- Influx db adapter
+- [ ] Handle SwitchBot Contact Sensor.
 
 
+## Future Adapters
+
+- [ ] InfluxDB: Adapter to export historical data to InfluxDB for visualization in Grafana.
