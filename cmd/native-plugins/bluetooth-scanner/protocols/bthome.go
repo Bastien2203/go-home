@@ -1,8 +1,8 @@
 package protocols
 
 import (
-	"bluetooth-scanner/utils"
 	"fmt"
+	"time"
 
 	"log"
 
@@ -14,13 +14,17 @@ import (
 
 var BthomeUUID = bluetooth.New16BitUUID(uint16(bthomev2_types.ServiceDataUUID))
 
+var TTL = 1 * time.Hour
+
 type BthomeParser struct {
-	cache map[string]uint8
+	cache     map[string]uint8
+	timestamp time.Time
 }
 
 func NewBthomeParser() *BthomeParser {
 	return &BthomeParser{
-		cache: make(map[string]uint8),
+		timestamp: time.Now(),
+		cache:     make(map[string]uint8),
 	}
 }
 
@@ -32,23 +36,32 @@ func (d *BthomeParser) CanParse() bool {
 	return true
 }
 
-func (d *BthomeParser) Parse(address string, payload []byte) ([]*types.Capability, error) {
+func (d *BthomeParser) ClearCache() {
+	if time.Now().After(d.timestamp.Add(TTL)) {
+		d.cache = make(map[string]uint8)
+		d.timestamp = time.Now()
+	}
+}
+
+// Returns list of capabilities, boolean false if packet is duplicated, and error
+func (d *BthomeParser) Parse(address string, payload []byte) ([]*types.Capability, bool, error) {
+	d.ClearCache()
 	data, err := bthomev2.ParseServiceData(payload)
 	if err != nil {
 		log.Printf("error while parsing service data : %s\n", err.Error())
-		return nil, fmt.Errorf("error while parsing service data: %w", err)
+		return nil, false, nil
 	}
 
 	pid, found := data[bthomev2_types.PacketID]
 	if found {
 		pidValue, ok := pid.Float64()
 		if !ok {
-			return nil, fmt.Errorf("invalid packet id value")
+			return nil, false, fmt.Errorf("invalid packet id value")
 		}
 		// If packet already seen, ignore it
 		if entry, ok := d.cache[address]; ok {
 			if entry == uint8(pidValue) {
-				return nil, utils.DeduplicateBluetoothPackets
+				return nil, true, nil
 			}
 		}
 		// Else, update cache
@@ -62,7 +75,7 @@ func (d *BthomeParser) Parse(address string, payload []byte) ([]*types.Capabilit
 		}
 	}
 
-	return capabilities, nil
+	return capabilities, false, nil
 }
 
 func UnitFromBthome(u bthomev2_types.Unit) types.Unit {

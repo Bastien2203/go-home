@@ -8,10 +8,13 @@ import (
 )
 
 type SwitchBotParser struct {
+	lastPayloads map[string]string
 }
 
 func NewSwitchBotParser() *SwitchBotParser {
-	return &SwitchBotParser{}
+	return &SwitchBotParser{
+		lastPayloads: make(map[string]string),
+	}
 }
 
 func (p *SwitchBotParser) Name() string {
@@ -22,26 +25,39 @@ func (p *SwitchBotParser) CanParse() bool {
 	return true
 }
 
-func (p *SwitchBotParser) Parse(address string, payload []byte) ([]*types.Capability, error) {
+func (p *SwitchBotParser) Parse(address string, payload []byte) ([]*types.Capability, bool, error) {
 	encrypted := (payload[0] & 0b10000000) != 0
 
 	if encrypted {
-		return nil, fmt.Errorf("encrypted switchbot payload not supported for now")
+		return nil, false, fmt.Errorf("encrypted switchbot payload not supported for now")
 	}
+
+	payloadStr := string(payload)
+	if last, ok := p.lastPayloads[address]; ok {
+		if last == payloadStr {
+			return nil, true, nil
+		}
+	}
+	p.lastPayloads[address] = payloadStr
+
 	modelChar := payload[0] & 0x7F
 
 	switch modelChar {
 	case ModelMeter, ModelMeterPlus:
-		return parseMeter(payload)
+		capabilities, err := parseMeter(payload)
+		if err != nil {
+			return nil, false, err
+		}
+		return capabilities, false, nil
 	case ModelCurtain:
-		return nil, fmt.Errorf("doesnt support switchbot curtain for now")
+		return nil, false, fmt.Errorf("doesnt support switchbot curtain for now")
 	case ModelMotionSensor:
-		return nil, fmt.Errorf("doesnt support switchbot motion sensor for now")
+		return nil, false, fmt.Errorf("doesnt support switchbot motion sensor for now")
 	case ModelContactSensor:
-		return nil, fmt.Errorf("doesnt support switchbot contact sensor for now")
+		return nil, false, fmt.Errorf("doesnt support switchbot contact sensor for now")
 
 	default:
-		return nil, fmt.Errorf("doesnt support switchbot model: %c", modelChar)
+		return nil, false, fmt.Errorf("doesnt support switchbot model: %c", modelChar)
 	}
 }
 

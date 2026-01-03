@@ -22,6 +22,6 @@ func (d *NotImplementedParser) CanParse() bool {
 	return false
 }
 
-func (d *NotImplementedParser) Parse(address string, payload []byte) ([]*types.Capability, error) {
-	return nil, fmt.Errorf("not implemented")
+func (d *NotImplementedParser) Parse(address string, payload []byte) ([]*types.Capability, bool, error) {
+	return nil, false, fmt.Errorf("not implemented")
 }

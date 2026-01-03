@@ -10,7 +10,7 @@ func TestSwitchBotParser(t *testing.T) {
 
 	parser := NewSwitchBotParser()
 
-	_, err := parser.Parse(address, payload)
+	_, _, err := parser.Parse(address, payload)
 	if err != nil {
 		t.Fatalf("Failed to parse payload %v", err)
 	}

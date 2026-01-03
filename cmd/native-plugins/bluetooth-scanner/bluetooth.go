@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bluetooth-scanner/utils"
 	"fmt"
 	"log"
 	"time"
@@ -11,21 +10,12 @@ import (
 	"tinygo.org/x/bluetooth"
 )
 
-const (
-	EVENT_DEVICE_FOUND_INTERVAL = time.Minute
-	EVENT_DATA_INTERVAL         = time.Minute
-)
-
-type deviceCacheEntry struct {
-	address  string
-	packetId uint8
-}
-
 type BluetoothScanner struct {
 	eventBus      *events.EventBus
 	adapter       *bluetooth.Adapter
 	onStateChange func(state types.State)
 	started       bool
+	scanResults   chan bluetooth.ScanResult
 }
 
 func NewBluetoothScanner(eventBus *events.EventBus, onStateChange func(state types.State)) *BluetoothScanner {
@@ -47,9 +37,12 @@ func (s *BluetoothScanner) Start() error {
 		return fmt.Errorf("bluetooth scanner already running")
 	}
 
+	s.scanResults = make(chan bluetooth.ScanResult, 100)
+	go s.processResults()
 	go s.scanLoop()
 
 	s.onStateChange(types.StateRunning)
+
 	s.started = true
 	return nil
 }
@@ -69,55 +62,38 @@ func (s *BluetoothScanner) scanLoop() {
 
 	log.Println("[Bluetooth Scanner] Started")
 
-	err := s.adapter.Scan(func(adapter *bluetooth.Adapter, device bluetooth.ScanResult) {
-		if len(device.ServiceData()) == 0 {
-			return
+	err := s.adapter.Scan(func(adapter *bluetooth.Adapter, r bluetooth.ScanResult) {
+		select {
+		case s.scanResults <- r:
+		default:
 		}
+	})
 
-		data := make([]*types.Capability, 0, len(device.ServiceData()))
-		protocols := make([]string, 0)
+	if err != nil {
+		log.Printf("[Bluetooth Scanner] Scan error: %v", err)
+		s.onStateChange(types.StateStopped)
+		s.started = false
+	}
+}
+
+func (s *BluetoothScanner) processResults() {
+	for device := range s.scanResults {
+		data := make([]*types.Capability, 0)
+		protocolsSeen := make([]string, 0)
+
 		for _, svc := range device.ServiceData() {
-			protocol, ok := ProtocolList[svc.UUID]
-			if !ok {
-				continue
+			if protocol, ok := ProtocolList[svc.UUID]; ok {
+				capabilities := processPayload(svc.Data, protocol, device.Address.String())
+				protocolsSeen = append(protocolsSeen, protocol.Name())
+				data = append(data, capabilities...)
 			}
-
-			protocols = append(protocols, protocol.Name())
-
-			if len(svc.Data) == 0 {
-				continue
-			}
-
-			if !protocol.CanParse() {
-				continue
-			}
-
-			capabilities, err := protocol.Parse(device.Address.String(), svc.Data)
-			if err != nil {
-				if err == utils.DeduplicateBluetoothPackets {
-					return
-				}
-				log.Printf("Error parsing service data for UUID %s: %v", svc.UUID.String(), err)
-				continue
-			}
-
-			data = append(data, capabilities...)
 		}
 
 		for _, mData := range device.ManufacturerData() {
-			ManufacturerProtocols, ok := ManufacturerProtocols[mData.CompanyID]
-			if !ok {
-				continue
-			}
-
-			protocols = append(protocols, ManufacturerProtocols.Name())
-
-			if len(mData.Data) == 0 {
-				continue
-			}
-
-			if !ManufacturerProtocols.CanParse() {
-				continue
+			if protocol, ok := ManufacturerProtocols[mData.CompanyID]; ok {
+				capabilities := processPayload(mData.Data, protocol, device.Address.String())
+				protocolsSeen = append(protocolsSeen, protocol.Name())
+				data = append(data, capabilities...)
 			}
 		}
 
@@ -142,17 +118,26 @@ func (s *BluetoothScanner) scanLoop() {
 				Payload: &BluetoothDevice{
 					Name:      device.LocalName(),
 					Address:   address,
-					Protocols: protocols,
+					Protocols: protocolsSeen,
 				},
 			})
 		}
-	})
-
-	if err != nil {
-		log.Printf("[Bluetooth Scanner] Scan error: %v", err)
-		s.onStateChange(types.StateStopped)
-		s.started = false
 	}
+}
+
+func processPayload(payload []byte, protocol Protocol, address string) []*types.Capability {
+	if len(payload) == 0 || !protocol.CanParse() {
+		return nil
+	}
+
+	capabilities, deduplication, err := protocol.Parse(address, payload)
+	if err != nil {
+		return nil
+	}
+	if deduplication {
+		return nil
+	}
+	return capabilities
 }
 
 func (s *BluetoothScanner) Stop() error {
@@ -164,6 +149,8 @@ func (s *BluetoothScanner) Stop() error {
 	if err != nil {
 		log.Printf("Error stopping bluetooth scan: %v", err)
 	}
+
+	close(s.scanResults)
 
 	s.started = false
 	s.onStateChange(types.StateStopped)
