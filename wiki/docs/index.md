@@ -24,7 +24,9 @@ graph LR
 ## :material-toy-brick: Components
 
 The ecosystem consists of two main parts:
+
 1. Core Service: The brain of the operation. It manages state, logic, and the API.
+
 2. Plugins: Microservices that act as adapters (Bluetooth, HomeKit, Zigbee, etc.) and communicate via MQTT.
 
 
