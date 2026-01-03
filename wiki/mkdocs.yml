@@ -1,11 +1,80 @@
 site_name: GoHome Docs
+repo_url: https://github.com/bastien2203/go-home
+repo_name: go-home
+
 theme:
   name: material
+  language: en
+  icon:
+    logo: material/home-automation 
+    repo: fontawesome/brands/github
+  #favicon: assets/favicon.ico 
+  
+
+  palette: 
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal 
+      accent: purple
+      toggle:
+        icon: material/weather-sunny
+        name: Passer au mode sombre
+
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/weather-night
+        name: Passer au mode clair
+
+
+  features:
+    - navigation.tabs 
+    - navigation.tabs.sticky
+    - navigation.sections 
+    - navigation.top 
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tooltips 
+
+
+markdown_extensions:
+  - abbr
+  - admonition 
+  - attr_list 
+  - def_list
+  - footnotes
+  - meta
+  - md_in_html
+  - toc:
+      permalink: true
+  
+
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences: 
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+  - pymdownx.tabbed:
+      alternate_style: true 
+  
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+
 nav:
   - Home: index.md
   - Installation: installation.md
   - Plugins:
+    - Introduction: plugins/index.md
     - Bluetooth Scanner: plugins/bluetooth-scanner.md
     - Homekit Adapter: plugins/homekit-adapter.md
-
   - Roadmap: roadmap.md
