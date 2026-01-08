@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-
 	"log"
+	"os"
 
 	"github.com/Bastien2203/go-home/shared/config"
 	"github.com/Bastien2203/go-home/shared/events"
@@ -29,5 +29,9 @@ func main() {
 
 	client := plugin.NewPluginClient(p, eventBus)
 	scanner := NewBluetoothScanner(eventBus, client.EmitNewState)
+	if os.Getenv("QUICK_STARTUP") == "true" {
+		log.Printf("Quick startup enabled")
+		scanner.Start()
+	}
 	client.RunPlugin(scanner.Start, scanner.Stop)
 }

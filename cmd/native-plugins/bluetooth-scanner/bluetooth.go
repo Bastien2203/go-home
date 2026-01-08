@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/Bastien2203/go-home/shared/events"
@@ -16,6 +17,8 @@ type BluetoothScanner struct {
 	onStateChange func(state types.State)
 	started       bool
 	scanResults   chan bluetooth.ScanResult
+	lastSeen      map[string]time.Time
+	mu            sync.Mutex
 }
 
 func NewBluetoothScanner(eventBus *events.EventBus, onStateChange func(state types.State)) *BluetoothScanner {
@@ -77,50 +80,61 @@ func (s *BluetoothScanner) scanLoop() {
 }
 
 func (s *BluetoothScanner) processResults() {
+	lastSeenDevices := make(map[string]time.Time, 100)
+	timestamp := time.Now()
+	ttl := 1 * time.Hour
+
 	for device := range s.scanResults {
-		data := make([]*types.Capability, 0)
-		protocolsSeen := make([]string, 0)
+		pData := types.ParsedData{
+			Address:     device.Address.String(),
+			Timestamp:   time.Now(),
+			Data:        make([]*types.Capability, 0, 10),
+			AddressType: types.BLEAddress,
+		}
+
+		protocolsSeen := make([]string, 0, 5)
+
+		if pData.Timestamp.Sub(timestamp) > ttl {
+			lastSeenDevices = make(map[string]time.Time, 100)
+			timestamp = pData.Timestamp
+		}
 
 		for _, svc := range device.ServiceData() {
 			if protocol, ok := ProtocolList[svc.UUID]; ok {
-				capabilities := processPayload(svc.Data, protocol, device.Address.String())
+				capabilities := processPayload(svc.Data, protocol, pData.Address)
 				protocolsSeen = append(protocolsSeen, protocol.Name())
-				data = append(data, capabilities...)
+				pData.Data = append(pData.Data, capabilities...)
 			}
 		}
 
 		for _, mData := range device.ManufacturerData() {
 			if protocol, ok := ManufacturerProtocols[mData.CompanyID]; ok {
-				capabilities := processPayload(mData.Data, protocol, device.Address.String())
+				capabilities := processPayload(mData.Data, protocol, pData.Address)
 				protocolsSeen = append(protocolsSeen, protocol.Name())
-				data = append(data, capabilities...)
+				pData.Data = append(pData.Data, capabilities...)
 			}
 		}
 
-		address := device.Address.String()
-		now := time.Now()
-
 		if s.eventBus != nil {
-			if len(data) > 0 {
+			if len(pData.Data) > 0 {
 				s.eventBus.Publish(events.Event{
-					Type: events.ParsedDataReceived,
-					Payload: &types.ParsedData{
-						Address:     address,
-						Data:        data,
-						Timestamp:   now,
-						AddressType: types.BLEAddress,
-					},
+					Type:    events.ParsedDataReceived,
+					Payload: pData,
 				})
-			}
+				lastSeen, ok := lastSeenDevices[pData.Address]
 
-			s.eventBus.Publish(events.Event{
-				Type: events.BluetoothDeviceFound,
-				Payload: &BluetoothDevice{
-					Name:      device.LocalName(),
-					Address:   address,
-					Protocols: protocolsSeen,
-				},
-			})
+				if !ok || pData.Timestamp.Sub(lastSeen) > 30*time.Second {
+					lastSeenDevices[pData.Address] = pData.Timestamp
+					s.eventBus.Publish(events.Event{
+						Type: events.BluetoothDeviceFound,
+						Payload: BluetoothDevice{
+							Name:      device.LocalName(),
+							Address:   pData.Address,
+							Protocols: protocolsSeen,
+						},
+					})
+				}
+			}
 		}
 	}
 }

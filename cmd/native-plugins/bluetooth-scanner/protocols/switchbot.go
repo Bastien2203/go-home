@@ -3,12 +3,14 @@ package protocols
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Bastien2203/go-home/shared/types"
 )
 
 type SwitchBotParser struct {
 	lastPayloads map[string]string
+	timestamp    time.Time
 }
 
 func NewSwitchBotParser() *SwitchBotParser {
@@ -25,7 +27,15 @@ func (p *SwitchBotParser) CanParse() bool {
 	return true
 }
 
+func (d *SwitchBotParser) ClearCache() {
+	if time.Now().After(d.timestamp.Add(TTL)) {
+		d.lastPayloads = make(map[string]string)
+		d.timestamp = time.Now()
+	}
+}
+
 func (p *SwitchBotParser) Parse(address string, payload []byte) ([]*types.Capability, bool, error) {
+	p.ClearCache()
 	encrypted := (payload[0] & 0b10000000) != 0
 
 	if encrypted {
