@@ -1,4 +1,4 @@
-package senmltypes
+package types
 
 type HubEvent string
 

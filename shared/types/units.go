@@ -1,4 +1,4 @@
-package senmltypes
+package types
 
 type HubUnit string
 

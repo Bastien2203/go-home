@@ -1,7 +1,7 @@
 github.com/Bastien2203/bthomev2 v1.2.0 h1:wqH6dCYeP9uFyN9V2mm8Kxu/A/Qf8MmBFK71K01k7WI=
 github.com/Bastien2203/bthomev2 v1.2.0/go.mod h1:4x5OfAJHGfkmh/IxlAxYSSJ63lwS95KxDKTffEiLrms=
-github.com/Bastien2203/go-home v1.6.2 h1:ESiAH42Kld1le9KfO7ERIGwZ7dfrpejDAuZ28uMAUWc=
-github.com/Bastien2203/go-home v1.6.2/go.mod h1:nB0mToC8Fw3w3v215HZmbFfYG5y7A87iUzuNmbiJjBU=
+github.com/Bastien2203/go-home v1.6.3 h1:zS1izgJYigQ0IuPFTxKVNLuIz4S3jeT6R9TTmjK3DCs=
+github.com/Bastien2203/go-home v1.6.3/go.mod h1:nB0mToC8Fw3w3v215HZmbFfYG5y7A87iUzuNmbiJjBU=
 github.com/absmach/senml v1.0.8 h1:+opem/r4g6c6eA/JLyCIuksyEhj7eBdysY3pEmy1mqo=
 github.com/absmach/senml v1.0.8/go.mod h1:DRhzHLgvQoIUHroBgpFrSWso+bJZO9E96RlHAHy+VRI=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
