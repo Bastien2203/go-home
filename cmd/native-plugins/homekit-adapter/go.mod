@@ -3,13 +3,15 @@ module homekit-adapter
 go 1.25.4
 
 require (
-	github.com/Bastien2203/go-home v1.5.5
+	github.com/Bastien2203/go-home v1.6.4
 	github.com/brutella/hap v0.0.35
 )
 
 require (
+	github.com/absmach/senml v1.0.8 // indirect
 	github.com/brutella/dnssd v1.2.14 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
 	github.com/go-chi/chi v1.5.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
@@ -19,6 +21,7 @@ require (
 	github.com/tadglines/go-pkgs v0.0.0-20210623144937-b983b20f54f9 // indirect
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xiam/to v0.0.0-20200126224905-d60d31e03561 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/mod v0.31.0 // indirect

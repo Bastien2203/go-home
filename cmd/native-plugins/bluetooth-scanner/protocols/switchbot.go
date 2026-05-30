@@ -1,11 +1,11 @@
 package protocols
 
 import (
-	senmltypes "bluetooth-scanner/senml_types"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/Bastien2203/go-home/shared/types"
 	"github.com/absmach/senml"
 )
 
@@ -86,8 +86,8 @@ func parseMeter(data []byte) ([]senml.Record, error) {
 	// 1. Battery
 	battVal := float64(data[2] & 0x7F)
 	records = append(records, senml.Record{
-		Name:  string(senmltypes.HubRecordBattery),
-		Unit:  string(senmltypes.Percentage),
+		Name:  string(types.HubRecordBattery),
+		Unit:  string(types.Percentage),
 		Value: &battVal,
 	})
 
@@ -99,16 +99,16 @@ func parseMeter(data []byte) ([]senml.Record, error) {
 		tempVal = -tempVal
 	}
 	records = append(records, senml.Record{
-		Name:  senmltypes.HubRecordTemperature.ToString(),
-		Unit:  senmltypes.CelsiusDegree.ToString(),
+		Name:  types.HubRecordTemperature.ToString(),
+		Unit:  types.CelsiusDegree.ToString(),
 		Value: &tempVal,
 	})
 
 	// 3. Humidity
 	humVal := float64(data[5] & 0x7F)
 	records = append(records, senml.Record{
-		Name:  string(senmltypes.HubRecordHumidity),
-		Unit:  string(senmltypes.HumidityPercentage),
+		Name:  string(types.HubRecordHumidity),
+		Unit:  string(types.HumidityPercentage),
 		Value: &humVal,
 	})
 

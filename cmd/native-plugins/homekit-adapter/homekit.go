@@ -44,28 +44,34 @@ func (h *HomekitAdapter) Stop() error {
 }
 
 func (h *HomekitAdapter) onDeviceData(data types.DeviceStateUpdate) {
-	mapping, supported := CapabilityRegistry[data.CapabilityType]
-	if !supported {
-		log.Printf("capability %s not supported", data.CapabilityType)
-		return
-	}
-
-	if !h.manager.AccessoryExists(data.DeviceID) {
-		h.manager.CreateAccessory(data.DeviceName, data.DeviceID, mapping.Type)
-		h.manager.CreateService(data.DeviceID, mapping.NewService())
-	}
-
-	svc := h.manager.GetService(data.DeviceID, mapping.ServiceType)
-
-	if svc == nil {
-		svc = h.manager.CreateService(data.DeviceID, mapping.NewService())
-		if svc == nil {
-			log.Printf("failed to create service capability %s for device %s", data.CapabilityType, data.DeviceID)
+	for _, record := range data.Data.Records {
+		recordName := types.HubRecordName(record.Name)
+		mapping, supported := RecordRegistry[recordName]
+		if !supported {
+			log.Printf("capability %s not supported", record.Name)
+			continue
 		}
-	}
 
-	if !h.manager.UdateCharacteristic(svc.C(mapping.CharType), mapping.ValueConverter(data.Value)) {
-		log.Printf("failed to update charachteristics for device %s", data.DeviceID)
+		if !h.manager.AccessoryExists(data.DeviceID) {
+			h.manager.CreateAccessory(data.DeviceName, data.DeviceID, mapping.Type)
+			h.manager.CreateService(data.DeviceID, mapping.NewService())
+		}
+
+		svc := h.manager.GetService(data.DeviceID, mapping.ServiceType)
+
+		if svc == nil {
+			svc = h.manager.CreateService(data.DeviceID, mapping.NewService())
+			if svc == nil {
+				log.Printf("failed to create service capability %s for device %s", recordName, data.DeviceID)
+			}
+		}
+
+		val := mapping.ValueConverter(&record)
+		if val != nil {
+			if !h.manager.UdateCharacteristic(svc.C(mapping.CharType), val) {
+				log.Printf("failed to update characteristic for device %s", data.DeviceID)
+			}
+		}
 	}
 }
 

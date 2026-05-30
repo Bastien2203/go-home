@@ -8,7 +8,7 @@ ENV VITE_APP_ENV=production
 COPY front/ .
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.25-bookworm AS go-builder
+FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS go-builder
 
 COPY --from=tonistiigi/xx:master / /
 

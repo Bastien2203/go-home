@@ -49,6 +49,12 @@ func (k *Kernel) handleStateUpdate(parsedData types.ParsedData) {
 		return
 	}
 
+	fmt.Printf("=== New data detected %s===\n", parsedData.Data.Records[0].BaseName)
+	for _, r := range parsedData.Data.Records {
+		fmt.Printf("%f%s\n", *r.Value, r.Unit)
+	}
+	fmt.Println("======")
+
 	// device.LastUpdated = parsedData.Timestamp
 	// mu := k.getMutex(device.ID)
 	// mu.Lock()
