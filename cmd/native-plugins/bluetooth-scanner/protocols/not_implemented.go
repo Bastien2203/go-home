@@ -3,7 +3,7 @@ package protocols
 import (
 	"fmt"
 
-	"github.com/Bastien2203/go-home/shared/types"
+	"github.com/absmach/senml"
 )
 
 type NotImplementedParser struct {
@@ -22,6 +22,6 @@ func (d *NotImplementedParser) CanParse() bool {
 	return false
 }
 
-func (d *NotImplementedParser) Parse(address string, payload []byte) ([]*types.Capability, bool, error) {
+func (d *NotImplementedParser) Parse(address string, payload []byte) ([]senml.Record, bool, error) {
 	return nil, false, fmt.Errorf("not implemented")
 }

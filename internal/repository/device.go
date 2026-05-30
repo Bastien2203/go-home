@@ -49,11 +49,6 @@ func (r *DeviceRepository) Save(device *types.Device) error {
 		return fmt.Errorf("failed to marshal adapter_ids: %w", err)
 	}
 
-	capabilitiesJson, err := json.Marshal(device.Capabilities)
-	if err != nil {
-		return fmt.Errorf("failed to marshal capabilities: %w", err)
-	}
-
 	query := `
 	INSERT OR REPLACE INTO devices 
 	(id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated)
@@ -67,7 +62,7 @@ func (r *DeviceRepository) Save(device *types.Device) error {
 		device.Name,
 		string(adapterIDsJson),
 		device.CreatedAt,
-		string(capabilitiesJson),
+		"",
 		device.LastUpdated,
 	)
 
@@ -202,16 +197,6 @@ func (r *DeviceRepository) scanDevice(row Scanner) (*types.Device, error) {
 		if err := json.Unmarshal(adapterIDsJson, &d.AdapterIDs); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal adapter_ids: %w", err)
 		}
-	}
-
-	if len(capabilitiesJson) > 0 {
-		if err := json.Unmarshal(capabilitiesJson, &d.Capabilities); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal capabilities: %w", err)
-		}
-	}
-
-	if d.Capabilities == nil {
-		d.Capabilities = make(map[types.CapabilityType]*types.Capability)
 	}
 
 	return &d, nil

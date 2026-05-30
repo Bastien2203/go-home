@@ -3,13 +3,13 @@ package main
 import (
 	"bluetooth-scanner/protocols"
 
-	"github.com/Bastien2203/go-home/shared/types"
+	"github.com/absmach/senml"
 	"tinygo.org/x/bluetooth"
 )
 
 type Protocol interface {
 	Name() string
-	Parse(address string, payload []byte) ([]*types.Capability, bool, error)
+	Parse(address string, payload []byte) ([]senml.Record, bool, error)
 	CanParse() bool
 }
 

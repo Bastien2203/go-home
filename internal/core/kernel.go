@@ -49,31 +49,26 @@ func (k *Kernel) handleStateUpdate(parsedData types.ParsedData) {
 		return
 	}
 
-	device.LastUpdated = parsedData.Timestamp
-
-	mu := k.getMutex(device.ID)
-	mu.Lock()
-	for _, c := range parsedData.Data {
-		device.Capabilities[c.Name] = c
-	}
+	// device.LastUpdated = parsedData.Timestamp
+	// mu := k.getMutex(device.ID)
+	// mu.Lock()
+	// for _, c := range parsedData.Data {
+	// 	device.Capabilities[c.Name] = c
+	// }
 	// TODO : Save updated device (but its too much intensive to do it for each data update)
 	// k.repository.Save(device)
-	mu.Unlock()
+	// mu.Unlock()
 
 	for _, adapterID := range device.AdapterIDs {
 		go func(adapterID string) {
-			for _, c := range parsedData.Data {
-				k.eventBus.Publish(events.Event{
-					Type: events.UpdateDataForAdapter(adapterID),
-					Payload: types.DeviceStateUpdate{
-						DeviceID:       device.ID,
-						DeviceName:     device.Name,
-						CapabilityType: c.Name,
-						Timestamp:      parsedData.Timestamp,
-						Value:          c.Value,
-					},
-				})
-			}
+			k.eventBus.Publish(events.Event{
+				Type: events.UpdateDataForAdapter(adapterID),
+				Payload: types.DeviceStateUpdate{
+					DeviceID:   device.ID,
+					DeviceName: device.Name,
+					Data:       parsedData.Data,
+				},
+			})
 		}(adapterID)
 	}
 }

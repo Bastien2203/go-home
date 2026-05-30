@@ -8,8 +8,16 @@ import (
 
 	"github.com/Bastien2203/go-home/shared/events"
 	"github.com/Bastien2203/go-home/shared/types"
+	"github.com/absmach/senml"
 	"tinygo.org/x/bluetooth"
 )
+
+type ParsedData struct {
+	Address     string            `json:"address" cbor:"1,keyasint"`
+	AddressType types.AddressType `json:"address_type" cbor:"2,keyasint"`
+	Data        senml.Pack        `json:"data" cbor:"3,keyasint"`
+	Timestamp   time.Time         `json:"timestamp" cbor:"4,keyasint"`
+}
 
 type BluetoothScanner struct {
 	eventBus      *events.EventBus
@@ -85,10 +93,10 @@ func (s *BluetoothScanner) processResults() {
 	ttl := 1 * time.Hour
 
 	for device := range s.scanResults {
-		pData := types.ParsedData{
+		pData := ParsedData{
 			Address:     device.Address.String(),
 			Timestamp:   time.Now(),
-			Data:        make([]*types.Capability, 0, 10),
+			Data:        senml.Pack{},
 			AddressType: types.BLEAddress,
 		}
 
@@ -101,22 +109,27 @@ func (s *BluetoothScanner) processResults() {
 
 		for _, svc := range device.ServiceData() {
 			if protocol, ok := ProtocolList[svc.UUID]; ok {
-				capabilities := processPayload(svc.Data, protocol, pData.Address)
-				protocolsSeen = append(protocolsSeen, protocol.Name())
-				pData.Data = append(pData.Data, capabilities...)
+				if records := processPayload(svc.Data, protocol, pData.Address); len(records) > 0 {
+					protocolsSeen = append(protocolsSeen, protocol.Name())
+					pData.Data.Records = append(pData.Data.Records, records...)
+				}
 			}
 		}
 
 		for _, mData := range device.ManufacturerData() {
 			if protocol, ok := ManufacturerProtocols[mData.CompanyID]; ok {
-				capabilities := processPayload(mData.Data, protocol, pData.Address)
-				protocolsSeen = append(protocolsSeen, protocol.Name())
-				pData.Data = append(pData.Data, capabilities...)
+				if records := processPayload(mData.Data, protocol, pData.Address); len(records) > 0 {
+					protocolsSeen = append(protocolsSeen, protocol.Name())
+					pData.Data.Records = append(pData.Data.Records, records...)
+				}
 			}
 		}
 
 		if s.eventBus != nil {
-			if len(pData.Data) > 0 {
+			if len(pData.Data.Records) > 0 {
+				pData.Data.Records[0].BaseName = fmt.Sprintf("urn:dev:mac:%s:", pData.Address)
+				pData.Data.Records[0].BaseTime = float64(pData.Timestamp.Unix())
+
 				s.eventBus.Publish(events.Event{
 					Type:    events.ParsedDataReceived,
 					Payload: pData,
@@ -139,19 +152,19 @@ func (s *BluetoothScanner) processResults() {
 	}
 }
 
-func processPayload(payload []byte, protocol Protocol, address string) []*types.Capability {
+func processPayload(payload []byte, protocol Protocol, address string) []senml.Record {
 	if len(payload) == 0 || !protocol.CanParse() {
 		return nil
 	}
 
-	capabilities, deduplication, err := protocol.Parse(address, payload)
+	pack, deduplication, err := protocol.Parse(address, payload)
 	if err != nil {
 		return nil
 	}
 	if deduplication {
 		return nil
 	}
-	return capabilities
+	return pack
 }
 
 func (s *BluetoothScanner) Stop() error {

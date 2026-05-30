@@ -3,12 +3,14 @@ package events
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"log"
 	"time"
 
 	"github.com/Bastien2203/go-home/shared/config"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/fxamacker/cbor/v2"
 )
 
 type EventType string
@@ -89,10 +91,16 @@ func (eb *EventBus) subscribeRaw(eventType EventType, handler func(payload []byt
 func Subscribe[T any](eb *EventBus, eventType EventType, handler func(T)) error {
 	return eb.subscribeRaw(eventType, func(rawPayload []byte) {
 		var target T
+		var err error
 
-		err := json.Unmarshal(rawPayload, &target)
+		if eventType == ParsedDataReceived || strings.Contains(string(eventType), "gohome/device/updated") {
+			err = cbor.Unmarshal(rawPayload, &target)
+		} else {
+			err = json.Unmarshal(rawPayload, &target)
+		}
+
 		if err != nil {
-			log.Printf("Unmarshal error : %s: %v", eventType, err)
+			log.Printf("Unmarshal error on topic %s: %v", eventType, err)
 			return
 		}
 
@@ -101,13 +109,27 @@ func Subscribe[T any](eb *EventBus, eventType EventType, handler func(T)) error 
 }
 
 func (eb *EventBus) Publish(event Event) error {
-	payloadBytes, err := json.Marshal(event.Payload)
-	if err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
-	}
+	var payloadBytes []byte
+	var err error
 
-	if eb.debug {
-		log.Printf("[EventBus] Publish event (%s) : %s\n", event.Type, string(payloadBytes))
+	if event.Type == ParsedDataReceived || strings.Contains(string(event.Type), "gohome/device/updated") {
+		payloadBytes, err = cbor.Marshal(event.Payload)
+		if err != nil {
+			return fmt.Errorf("failed to marshal payload to CBOR: %w", err)
+		}
+
+		if eb.debug {
+			log.Printf("[EventBus] Publish event (%s) : %d bytes encoded in CBOR\n", event.Type, len(payloadBytes))
+		}
+	} else {
+		payloadBytes, err = json.Marshal(event.Payload)
+		if err != nil {
+			return fmt.Errorf("failed to marshal payload: %w", err)
+		}
+
+		if eb.debug {
+			log.Printf("[EventBus] Publish event (%s) : %s\n", event.Type, string(payloadBytes))
+		}
 	}
 
 	token := eb.client.Publish(string(event.Type), 0, false, payloadBytes)

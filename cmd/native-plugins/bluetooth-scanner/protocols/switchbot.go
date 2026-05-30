@@ -1,11 +1,12 @@
 package protocols
 
 import (
+	senmltypes "bluetooth-scanner/senml_types"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/Bastien2203/go-home/shared/types"
+	"github.com/absmach/senml"
 )
 
 type SwitchBotParser struct {
@@ -34,7 +35,7 @@ func (d *SwitchBotParser) ClearCache() {
 	}
 }
 
-func (p *SwitchBotParser) Parse(address string, payload []byte) ([]*types.Capability, bool, error) {
+func (p *SwitchBotParser) Parse(address string, payload []byte) ([]senml.Record, bool, error) {
 	p.ClearCache()
 	encrypted := (payload[0] & 0b10000000) != 0
 
@@ -52,13 +53,15 @@ func (p *SwitchBotParser) Parse(address string, payload []byte) ([]*types.Capabi
 
 	modelChar := payload[0] & 0x7F
 
+	var records []senml.Record
+	var err error
+
 	switch modelChar {
 	case ModelMeter, ModelMeterPlus:
-		capabilities, err := parseMeter(payload)
+		records, err = parseMeter(payload)
 		if err != nil {
 			return nil, false, err
 		}
-		return capabilities, false, nil
 	case ModelCurtain:
 		return nil, false, fmt.Errorf("doesnt support switchbot curtain for now")
 	case ModelMotionSensor:
@@ -69,45 +72,47 @@ func (p *SwitchBotParser) Parse(address string, payload []byte) ([]*types.Capabi
 	default:
 		return nil, false, fmt.Errorf("doesnt support switchbot model: %c", modelChar)
 	}
+
+	return records, false, nil
 }
 
-func parseMeter(data []byte) ([]*types.Capability, error) {
+func parseMeter(data []byte) ([]senml.Record, error) {
 	if len(data) < 6 {
-		return nil, errors.New("data meter invalide")
+		return nil, errors.New("invalid meter data length")
 	}
 
-	capabilites := make([]*types.Capability, 0, 3)
+	records := []senml.Record{}
 
-	capabilites = append(capabilites, &types.Capability{
-		Name:  types.CapabilityBattery,
-		Value: int(data[2] & 0x7F),
-		Type:  types.TypeInt,
+	// 1. Battery
+	battVal := float64(data[2] & 0x7F)
+	records = append(records, senml.Record{
+		Name:  string(senmltypes.HubRecordBattery),
+		Unit:  string(senmltypes.Percentage),
+		Value: &battVal,
 	})
 
+	// 2. Temperature
 	tempFrac := float64(data[3]&0x0F) / 10.0
 	tempInt := float64(data[4] & 0x7F)
-	temp := tempInt + tempFrac
+	tempVal := tempInt + tempFrac
 	if (data[4] & 0x80) == 0 {
-		temp = -temp
+		tempVal = -tempVal
 	}
-
-	capabilites = append(capabilites, &types.Capability{
-		Name:  types.CapabilityTemperature,
-		Value: temp,
-		Type:  types.TypeFloat,
-		Unit:  types.UnitCelsius,
+	records = append(records, senml.Record{
+		Name:  senmltypes.HubRecordTemperature.ToString(),
+		Unit:  senmltypes.CelsiusDegree.ToString(),
+		Value: &tempVal,
 	})
 
-	hum := int(data[5] & 0x7F)
-
-	capabilites = append(capabilites, &types.Capability{
-		Name:  types.CapabilityHumidity,
-		Value: hum,
-		Type:  types.TypeInt,
-		Unit:  types.UnitPercent,
+	// 3. Humidity
+	humVal := float64(data[5] & 0x7F)
+	records = append(records, senml.Record{
+		Name:  string(senmltypes.HubRecordHumidity),
+		Unit:  string(senmltypes.HumidityPercentage),
+		Value: &humVal,
 	})
 
-	return capabilites, nil
+	return records, nil
 }
 
 const (
