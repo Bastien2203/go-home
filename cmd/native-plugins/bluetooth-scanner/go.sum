@@ -1,7 +1,7 @@
 github.com/Bastien2203/bthomev2 v1.2.0 h1:wqH6dCYeP9uFyN9V2mm8Kxu/A/Qf8MmBFK71K01k7WI=
 github.com/Bastien2203/bthomev2 v1.2.0/go.mod h1:4x5OfAJHGfkmh/IxlAxYSSJ63lwS95KxDKTffEiLrms=
-github.com/Bastien2203/go-home v1.6.1 h1:MTztufvRN6qzLr1+K+mEkKvz9R8AF7nDjTSMvCqCxvo=
-github.com/Bastien2203/go-home v1.6.1/go.mod h1:1wxJGMabe4Cr2fQEz+ZeKaFn+vNicjHfU0VsIhqTvEI=
+github.com/Bastien2203/go-home v1.6.2 h1:ESiAH42Kld1le9KfO7ERIGwZ7dfrpejDAuZ28uMAUWc=
+github.com/Bastien2203/go-home v1.6.2/go.mod h1:nB0mToC8Fw3w3v215HZmbFfYG5y7A87iUzuNmbiJjBU=
 github.com/absmach/senml v1.0.8 h1:+opem/r4g6c6eA/JLyCIuksyEhj7eBdysY3pEmy1mqo=
 github.com/absmach/senml v1.0.8/go.mod h1:DRhzHLgvQoIUHroBgpFrSWso+bJZO9E96RlHAHy+VRI=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -10,8 +10,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/eclipse/paho.mqtt.golang v1.5.1 h1:/VSOv3oDLlpqR2Epjn1Q7b2bSTplJIeV2ISgCl2W7nE=
 github.com/eclipse/paho.mqtt.golang v1.5.1/go.mod h1:1/yJCneuyOoCOzKSsOTUc0AJfpsItBGWvYpBLimhArU=
-github.com/fxamacker/cbor/v2 v2.9.0 h1:NpKPmjDBgUfBms6tr6JZkTHtfFGcMKsw3eGcmD/sapM=
-github.com/fxamacker/cbor/v2 v2.9.0/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
+github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
+github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
 github.com/go-ole/go-ole v1.3.0 h1:Dt6ye7+vXGIKZ7Xtk4s6/xVdGDQynvom7xCFEdWr6uE=
 github.com/go-ole/go-ole v1.3.0/go.mod h1:5LS6F96DhAwUc7C+1HLexzMXY1xGRSryjyPPKW6zv78=
 github.com/godbus/dbus/v5 v5.2.0 h1:3WexO+U+yg9T70v9FdHr9kCxYlazaAXUhx2VMkbfax8=

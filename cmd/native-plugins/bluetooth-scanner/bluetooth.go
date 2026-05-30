@@ -12,13 +12,6 @@ import (
 	"tinygo.org/x/bluetooth"
 )
 
-type ParsedData struct {
-	Address     string            `json:"address" cbor:"1,keyasint"`
-	AddressType types.AddressType `json:"address_type" cbor:"2,keyasint"`
-	Data        senml.Pack        `json:"data" cbor:"3,keyasint"`
-	Timestamp   time.Time         `json:"timestamp" cbor:"4,keyasint"`
-}
-
 type BluetoothScanner struct {
 	eventBus      *events.EventBus
 	adapter       *bluetooth.Adapter
@@ -93,7 +86,7 @@ func (s *BluetoothScanner) processResults() {
 	ttl := 1 * time.Hour
 
 	for device := range s.scanResults {
-		pData := ParsedData{
+		pData := types.ParsedData{
 			Address:     device.Address.String(),
 			Timestamp:   time.Now(),
 			Data:        senml.Pack{},
