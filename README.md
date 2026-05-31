@@ -3,9 +3,16 @@
 A lightweight bridge for home devices written in Go.
 
 
+
+
+![](.github/images/screenshots/home.png)
+![](.github/images/screenshots/new-device.png)
+
+
 ## 🚀 Getting Started
 
 The easiest way to run `go-home` is using Docker Compose. The system consists of a Core service and optional plugins (Bluetooth, HomeKit, etc.).
+
 
 
 ### 1. Core Service (Required)

@@ -35,7 +35,7 @@ export const Header = (props: {
           <div className="flex flex-wrap justify-center gap-3">
             <StatusBadge icon={<Server size={16} />} label="Adapters" count={props.adapters.length} noCount={props.adaptersUnavailable} />
             <StatusBadge icon={<Radio size={16} />} label="Scanners" count={props.scanners.length} active={isSystemScanning} noCount={props.scannersUnavailable} />
-            <StatusBadge icon={<Database size={16} />} label="Appareils" count={props.devices.length} noCount={props.devicesUnavailable} />
+            <StatusBadge icon={<Database size={16} />} label="Devices" count={props.devices.length} noCount={props.devicesUnavailable} />
           </div>
           <button className="flex" onClick={() => {
               api.logout()
