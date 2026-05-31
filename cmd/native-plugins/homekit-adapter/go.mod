@@ -3,12 +3,12 @@ module homekit-adapter
 go 1.26.3
 
 require (
-	github.com/Bastien2203/go-home v1.6.4
+	github.com/Bastien2203/go-home v1.6.9
+	github.com/absmach/senml v1.0.8
 	github.com/brutella/hap v0.0.35
 )
 
 require (
-	github.com/absmach/senml v1.0.8 // indirect
 	github.com/brutella/dnssd v1.2.14 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect

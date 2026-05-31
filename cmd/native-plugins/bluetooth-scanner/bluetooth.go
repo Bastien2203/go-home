@@ -93,7 +93,7 @@ func (s *BluetoothScanner) processResults() {
 			AddressType: types.BLEAddress,
 		}
 
-		protocolsSeen := make([]string, 0, 5)
+		protocolsSeen := make([]string, 0, 5) // TODO: 5 is an arbitrary max array length
 
 		if pData.Timestamp.Sub(timestamp) > ttl {
 			lastSeenDevices = make(map[string]time.Time, 100)

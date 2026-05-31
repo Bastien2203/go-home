@@ -13,29 +13,33 @@ import (
 )
 
 type PluginManager struct {
-	eventBus    *events.EventBus
-	plugins     map[plugin.PluginType]map[string]*plugin.Plugin
-	mu          sync.Mutex
-	ack         map[string]chan struct{}
-	negativeAck map[string]chan struct{}
+	eventBus *events.EventBus
+	plugins  map[plugin.PluginType]map[string]*plugin.Plugin
+	mu       sync.Mutex
+
+	pendingRequests map[string]chan error
+	muRequests      sync.Mutex
 }
 
-const TimeoutDuration = 5 * time.Second
+const TimeoutDuration = 30 * time.Second
 
 func NewPluginManager(eventBus *events.EventBus) (*PluginManager, error) {
 	manager := &PluginManager{
-		eventBus:    eventBus,
-		plugins:     make(map[plugin.PluginType]map[string]*plugin.Plugin),
-		ack:         make(map[string]chan struct{}),
-		negativeAck: make(map[string]chan struct{}),
+		eventBus:        eventBus,
+		plugins:         make(map[plugin.PluginType]map[string]*plugin.Plugin),
+		pendingRequests: make(map[string]chan error),
 	}
 
 	if err := manager.subscribeToEvents(); err != nil {
 		return nil, err
 	}
 
-	return manager, nil
+	manager.eventBus.Publish(events.Event{
+		Type:    events.CoreDiscovery,
+		Payload: nil,
+	})
 
+	return manager, nil
 }
 
 func (m *PluginManager) subscribeToEvents() error {
@@ -51,11 +55,7 @@ func (m *PluginManager) subscribeToEvents() error {
 		return err
 	}
 
-	if err := events.Subscribe(m.eventBus, events.PluginAck, m.onPluginAck); err != nil {
-		return err
-	}
-
-	if err := events.Subscribe(m.eventBus, events.PluginNegativeAck, m.onPluginNegativeAck); err != nil {
+	if err := events.Subscribe(m.eventBus, events.PluginCommandResponse, m.onCommandResponse); err != nil {
 		return err
 	}
 
@@ -64,16 +64,44 @@ func (m *PluginManager) subscribeToEvents() error {
 	return nil
 }
 
-func (m *PluginManager) onPluginAck(p plugin.Plugin) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.ack[p.ID] <- struct{}{}
+func (m *PluginManager) onCommandResponse(r plugin.CommandResponse) {
+	m.muRequests.Lock()
+	defer m.muRequests.Unlock()
+	ch, exists := m.pendingRequests[r.RequestID]
+	if exists {
+		if !r.Success {
+			ch <- fmt.Errorf("plugin error: %s", r.Error)
+		} else {
+			ch <- nil
+		}
+		delete(m.pendingRequests, r.RequestID)
+	}
 }
 
-func (m *PluginManager) onPluginNegativeAck(p plugin.Plugin) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.negativeAck[p.ID] <- struct{}{}
+func (m *PluginManager) sendCommandAndWait(eventType events.EventType, pluginName string) error {
+	reqID := fmt.Sprintf("%d-%s-%s", time.Now().UnixNano(), pluginName, eventType)
+	ch := make(chan error, 1)
+
+	m.muRequests.Lock()
+	m.pendingRequests[reqID] = ch
+	m.muRequests.Unlock()
+
+	m.eventBus.Publish(events.Event{
+		Type: eventType,
+		Payload: plugin.CommandRequest{
+			RequestID: reqID,
+		},
+	})
+
+	select {
+	case err := <-ch:
+		return err
+	case <-time.After(TimeoutDuration):
+		m.muRequests.Lock()
+		delete(m.pendingRequests, reqID)
+		m.muRequests.Unlock()
+		return fmt.Errorf("timeout waiting for plugin %s", pluginName)
+	}
 }
 
 func (m *PluginManager) onPluginConnected(p plugin.Plugin) {
@@ -85,21 +113,10 @@ func (m *PluginManager) onPluginConnected(p plugin.Plugin) {
 		return
 	}
 
-	if _, ok := m.ack[p.ID]; ok {
-		log.Printf("[PluginManager] plugin with ID:%s already exists in ack map", p.ID)
-		return
-	}
-
-	if _, ok := m.negativeAck[p.ID]; ok {
-		log.Printf("[PluginManager] plugin with ID:%s already exists in negativeAck map", p.ID)
-		return
-	}
 	if _, ok := m.plugins[p.Type]; !ok {
 		m.plugins[p.Type] = make(map[string]*plugin.Plugin)
 	}
 
-	m.negativeAck[p.ID] = make(chan struct{}, 1)
-	m.ack[p.ID] = make(chan struct{}, 1)
 	m.plugins[p.Type][p.ID] = &p
 }
 
@@ -112,18 +129,6 @@ func (m *PluginManager) onPluginDisconnected(p plugin.Plugin) {
 		return
 	}
 
-	if _, ok := m.ack[p.ID]; !ok {
-		log.Printf("[PluginManager] plugin with ID:%s doesnt exists in ack map", p.ID)
-		return
-	}
-
-	if _, ok := m.negativeAck[p.ID]; !ok {
-		log.Printf("[PluginManager] plugin with ID:%s doesnt exists in negativeAck map", p.ID)
-		return
-	}
-
-	delete(m.negativeAck, p.ID)
-	delete(m.ack, p.ID)
 	delete(m.plugins[p.Type], p.ID)
 }
 
@@ -180,37 +185,9 @@ func (m *PluginManager) GetPlugins() []*plugin.Plugin {
 }
 
 func (m *PluginManager) StopPlugin(p *plugin.Plugin) error {
-	m.eventBus.Publish(events.Event{
-		Type:    events.PluginStop(p.ID),
-		Payload: []any{},
-	})
-
-	select {
-	case <-m.ack[p.ID]:
-		return nil
-	case <-m.negativeAck[p.ID]:
-		return fmt.Errorf("error stopping %s %s", p.Type, p.Name)
-	case <-time.After(TimeoutDuration):
-		return fmt.Errorf("timeout stopping %s %s", p.Type, p.Name)
-	}
+	return m.sendCommandAndWait(events.PluginStop(p.ID), p.Name)
 }
 
 func (m *PluginManager) StartPlugin(p *plugin.Plugin) error {
-	m.mu.Lock()
-	ack := m.ack[p.ID]
-	nack := m.negativeAck[p.ID]
-	m.mu.Unlock()
-	m.eventBus.Publish(events.Event{
-		Type:    events.PluginStart(p.ID),
-		Payload: []any{},
-	})
-
-	select {
-	case <-ack:
-		return nil
-	case <-nack:
-		return fmt.Errorf("error starting %s %s", p.Type, p.Name)
-	case <-time.After(TimeoutDuration):
-		return fmt.Errorf("timeout starting %s %s", p.Type, p.Name)
-	}
+	return m.sendCommandAndWait(events.PluginStart(p.ID), p.Name)
 }

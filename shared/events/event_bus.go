@@ -16,13 +16,13 @@ import (
 type EventType string
 
 const (
-	ParsedDataReceived   EventType = "gohome/parsed_data"
-	BluetoothDeviceFound EventType = "gohome/bluetooth/found"
-	PluginConnected      EventType = "gohome/plugin/connected"
-	PluginDisconnected   EventType = "gohome/plugin/disconnected"
-	PluginStateChanged   EventType = "gohome/plugin/newstate"
-	PluginAck            EventType = "gohome/plugin/ack"
-	PluginNegativeAck    EventType = "gohome/plugin/negative-ack"
+	ParsedDataReceived    EventType = "gohome/parsed_data"
+	BluetoothDeviceFound  EventType = "gohome/bluetooth/found"
+	PluginConnected       EventType = "gohome/plugin/connected"
+	PluginDisconnected    EventType = "gohome/plugin/disconnected"
+	PluginStateChanged    EventType = "gohome/plugin/newstate"
+	CoreDiscovery         EventType = "gohome/core/discovery"
+	PluginCommandResponse EventType = "gohome/plugin/command-response"
 )
 
 func PluginStop(id string) EventType {
