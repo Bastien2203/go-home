@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	github.com/Bastien2203/bthomev2 v1.2.0
-	github.com/Bastien2203/go-home v1.6.9
+	github.com/Bastien2203/go-home v1.6.8
 	github.com/absmach/senml v1.0.8
 	tinygo.org/x/bluetooth v0.15.0
 )
