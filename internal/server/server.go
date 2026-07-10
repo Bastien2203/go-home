@@ -1,8 +1,8 @@
 package server
 
 import (
+	"context"
 	"fmt"
-
 	"log"
 	"net/http"
 	"os"
@@ -23,9 +23,11 @@ type Server struct {
 	userRepository *repository.UserRepository
 	sessionSecret  string
 	appEnv         config.AppEnv
+	allowedOrigins []string
+	httpServer     *http.Server
 }
 
-func NewServer(kernel *core.Kernel, port int, sessionSecret string, appEnv config.AppEnv, wsHub *websockets.Hub, userRepository *repository.UserRepository) *Server {
+func NewServer(kernel *core.Kernel, port int, sessionSecret string, appEnv config.AppEnv, wsHub *websockets.Hub, userRepository *repository.UserRepository, allowedOrigins []string) *Server {
 	return &Server{
 		kernel:         kernel,
 		addr:           fmt.Sprintf(":%d", port),
@@ -33,6 +35,7 @@ func NewServer(kernel *core.Kernel, port int, sessionSecret string, appEnv confi
 		sessionSecret:  sessionSecret,
 		appEnv:         appEnv,
 		userRepository: userRepository,
+		allowedOrigins: allowedOrigins,
 	}
 }
 
@@ -40,6 +43,7 @@ func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
 	staticDir := "./dist"
+	fs := http.FileServer(http.Dir(staticDir))
 
 	// --- Routes ---
 
@@ -49,9 +53,9 @@ func (s *Server) Start() error {
 	routes.NewPluginsRouter(s.kernel, mux, userRouter.AuthMiddleware)
 	routes.NewScannersRouter(s.kernel, mux, userRouter.AuthMiddleware)
 
-	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		websockets.ServeWs(s.wsHub, w, r)
-	})
+	mux.Handle("/ws", userRouter.AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		websockets.ServeWs(s.wsHub, w, r, s.allowedOrigins, s.appEnv)
+	})))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Join(staticDir, r.URL.Path)
@@ -67,14 +71,21 @@ func (s *Server) Start() error {
 			return
 		}
 
-		http.FileServer(http.Dir(staticDir)).ServeHTTP(w, r)
+		fs.ServeHTTP(w, r)
 	})
 
-	server := &http.Server{
+	s.httpServer = &http.Server{
 		Addr:    s.addr,
-		Handler: middlewares.CorsMiddleware(mux),
+		Handler: middlewares.CorsMiddleware(s.allowedOrigins, s.appEnv)(mux),
 	}
 
 	log.Printf("[Server] API listening on http://localhost%s", s.addr)
-	return server.ListenAndServe()
+	return s.httpServer.ListenAndServe()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.httpServer != nil {
+		return s.httpServer.Shutdown(ctx)
+	}
+	return nil
 }

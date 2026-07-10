@@ -5,12 +5,10 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Bastien2203/go-home/shared/config"
+	"github.com/Bastien2203/go-home/shared/middlewares"
 	"github.com/gorilla/websocket"
 )
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true }, // TODO remove true for production
-}
 
 type Client struct {
 	hub  *Hub
@@ -39,7 +37,6 @@ func (c *Client) readPump() {
 		switch msg.Action {
 		case "subscribe":
 			c.hub.Subscribe(c, msg.Topic)
-			// log.Printf("Client subscribed to : %s", msg.Topic)
 
 		case "publish":
 			c.hub.broadcast <- &msg
@@ -62,7 +59,25 @@ func (c *Client) writePump() {
 	}
 }
 
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, allowedOrigins []string, appEnv config.AppEnv) {
+	originSet := make(map[string]bool, len(allowedOrigins))
+	for _, o := range allowedOrigins {
+		originSet[o] = true
+	}
+
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true
+			}
+			if appEnv == config.Dev && middlewares.IsLocalhostOrigin(origin) {
+				return true
+			}
+			return originSet[origin]
+		},
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -70,7 +85,6 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{hub: hub, conn: conn, send: make(chan *Message, 256)}
-	client.hub.register <- client
 
 	go client.writePump()
 	go client.readPump()

@@ -2,10 +2,10 @@ package routes
 
 import (
 	"encoding/json"
-
 	"log"
 	"net/http"
 	"net/mail"
+	"strings"
 
 	"github.com/Bastien2203/go-home/internal/core"
 	"github.com/Bastien2203/go-home/internal/repository"
@@ -44,6 +44,7 @@ func NewUsersRouter(mux *http.ServeMux, sessionSecret string, appEnv config.AppE
 }
 
 func (s *UsersRouter) handleLogin(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var loginRequest UserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&loginRequest); err != nil {
@@ -141,6 +142,7 @@ func (s *UsersRouter) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var signInRequest UserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&signInRequest); err != nil {
@@ -150,6 +152,11 @@ func (s *UsersRouter) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	if !mailIsValid(signInRequest.Email) {
 		http.Error(w, "Invalid email format", http.StatusBadRequest)
+		return
+	}
+
+	if len(signInRequest.Password) < 8 {
+		http.Error(w, "Password must be at least 8 characters", http.StatusBadRequest)
 		return
 	}
 
@@ -166,7 +173,11 @@ func (s *UsersRouter) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.userRepository.Save(u); err != nil {
-		http.Error(w, "error while saving user", http.StatusBadRequest)
+		if strings.Contains(err.Error(), "UNIQUE constraint") {
+			http.Error(w, "Registration is not available", http.StatusForbidden)
+		} else {
+			http.Error(w, "Error while saving user", http.StatusInternalServerError)
+		}
 		return
 	}
 

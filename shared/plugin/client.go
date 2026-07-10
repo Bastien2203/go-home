@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/Bastien2203/go-home/shared/events"
@@ -15,6 +16,7 @@ type PluginClient struct {
 	eventBus       *events.EventBus
 	onStart        func() error
 	onStop         func() error
+	mu             sync.Mutex
 }
 
 func NewPluginClient(instance *Plugin, eventBus *events.EventBus) *PluginClient {
@@ -106,7 +108,10 @@ func (c *PluginClient) onPluginStart(req CommandRequest) {
 }
 
 func (c *PluginClient) EmitNewState(s types.State) {
+	c.mu.Lock()
 	c.pluginInstance.State = s
+	c.mu.Unlock()
+
 	c.eventBus.Publish(events.Event{
 		Type:    events.PluginStateChanged,
 		Payload: c.pluginInstance,

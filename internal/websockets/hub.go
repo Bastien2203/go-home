@@ -6,19 +6,15 @@ import (
 )
 
 type Hub struct {
-	topics map[Topic]map[*Client]bool
-
-	register   chan *Client
+	topics     map[Topic]map[*Client]bool
 	unregister chan *Client
 	broadcast  chan *Message
-
-	mu sync.RWMutex
+	mu         sync.RWMutex
 }
 
 func NewHub() *Hub {
 	return &Hub{
 		topics:     make(map[Topic]map[*Client]bool),
-		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan *Message, 100),
 	}
@@ -27,13 +23,8 @@ func NewHub() *Hub {
 func (h *Hub) Run() {
 	for {
 		select {
-		case client := <-h.register:
-
-			_ = client
-
 		case client := <-h.unregister:
 			h.mu.Lock()
-
 			for topic := range h.topics {
 				if _, ok := h.topics[topic][client]; ok {
 					delete(h.topics[topic], client)
@@ -44,7 +35,6 @@ func (h *Hub) Run() {
 
 		case msg := <-h.broadcast:
 			h.mu.RLock()
-
 			if clients, ok := h.topics[msg.Topic]; ok {
 				for client := range clients {
 					select {

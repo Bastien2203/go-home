@@ -88,12 +88,27 @@ func (eb *EventBus) subscribeRaw(eventType EventType, handler func(payload []byt
 	return token.Error()
 }
 
+var cborTopicPrefixes = []string{
+	string(ParsedDataReceived),
+	"gohome/device/updated",
+}
+
+func isCBORTopic(eventType EventType) bool {
+	topic := string(eventType)
+	for _, prefix := range cborTopicPrefixes {
+		if topic == prefix || strings.HasPrefix(topic, prefix+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 func Subscribe[T any](eb *EventBus, eventType EventType, handler func(T)) error {
 	return eb.subscribeRaw(eventType, func(rawPayload []byte) {
 		var target T
 		var err error
 
-		if eventType == ParsedDataReceived || strings.Contains(string(eventType), "gohome/device/updated") {
+		if isCBORTopic(eventType) {
 			err = cbor.Unmarshal(rawPayload, &target)
 		} else {
 			err = json.Unmarshal(rawPayload, &target)
@@ -112,7 +127,7 @@ func (eb *EventBus) Publish(event Event) error {
 	var payloadBytes []byte
 	var err error
 
-	if event.Type == ParsedDataReceived || strings.Contains(string(event.Type), "gohome/device/updated") {
+	if isCBORTopic(event.Type) {
 		payloadBytes, err = cbor.Marshal(event.Payload)
 		if err != nil {
 			return fmt.Errorf("failed to marshal payload to CBOR: %w", err)

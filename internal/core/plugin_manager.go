@@ -100,6 +100,7 @@ func (m *PluginManager) sendCommandAndWait(eventType events.EventType, pluginNam
 		m.muRequests.Lock()
 		delete(m.pendingRequests, reqID)
 		m.muRequests.Unlock()
+		close(ch)
 		return fmt.Errorf("timeout waiting for plugin %s", pluginName)
 	}
 }

@@ -46,6 +46,7 @@ func (s *DevicesRouter) handleListDevices(w http.ResponseWriter, r *http.Request
 }
 
 func (s *DevicesRouter) handleCreateDevice(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req DeviceCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)

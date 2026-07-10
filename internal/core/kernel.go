@@ -2,11 +2,8 @@ package core
 
 import (
 	"fmt"
-	"os/exec"
-
 	"log"
 	"sort"
-	"sync"
 
 	"github.com/Bastien2203/go-home/shared/events"
 	"github.com/Bastien2203/go-home/shared/plugin"
@@ -16,10 +13,8 @@ import (
 type Kernel struct {
 	eventBus      *events.EventBus
 	repository    DeviceRepository
-	mu            map[string]*sync.Mutex
-	muLock        sync.Mutex
 	pluginManager *PluginManager
-	processes     map[string]*exec.Cmd
+	sem           chan struct{}
 }
 
 func NewKernel(eventBus *events.EventBus, repository DeviceRepository) (*Kernel, error) {
@@ -31,9 +26,8 @@ func NewKernel(eventBus *events.EventBus, repository DeviceRepository) (*Kernel,
 	kernel := &Kernel{
 		eventBus:      eventBus,
 		repository:    repository,
-		mu:            make(map[string]*sync.Mutex),
-		processes:     make(map[string]*exec.Cmd),
 		pluginManager: pluginManager,
+		sem:           make(chan struct{}, 16),
 	}
 
 	if err := events.Subscribe(eventBus, events.ParsedDataReceived, kernel.handleStateUpdate); err != nil {
@@ -49,43 +43,22 @@ func (k *Kernel) handleStateUpdate(parsedData types.ParsedData) {
 		return
 	}
 
-	// device.LastUpdated = parsedData.Timestamp
-	// mu := k.getMutex(device.ID)
-	// mu.Lock()
-	// for _, c := range parsedData.Data {
-	// 	device.Capabilities[c.Name] = c
-	// }
-	// TODO : Save updated device (but its too much intensive to do it for each data update)
-	// k.repository.Save(device)
-	// mu.Unlock()
-
 	for _, adapterID := range device.AdapterIDs {
+		k.sem <- struct{}{}
 		go func(adapterID string) {
-			k.eventBus.Publish(events.Event{
+			defer func() { <-k.sem }()
+			if err := k.eventBus.Publish(events.Event{
 				Type: events.UpdateDataForAdapter(adapterID),
 				Payload: types.DeviceStateUpdate{
 					DeviceID:   device.ID,
 					DeviceName: device.Name,
 					Data:       parsedData.Data,
 				},
-			})
+			}); err != nil {
+				log.Printf("[Kernel] Failed to publish state update for adapter %s: %v", adapterID, err)
+			}
 		}(adapterID)
 	}
-}
-
-func (k *Kernel) getMutex(deviceID string) *sync.Mutex {
-	k.muLock.Lock()
-	defer k.muLock.Unlock()
-	if k.mu[deviceID] == nil {
-		k.mu[deviceID] = &sync.Mutex{}
-	}
-	return k.mu[deviceID]
-}
-
-func (k *Kernel) deleteMutex(deviceID string) {
-	k.muLock.Lock()
-	defer k.muLock.Unlock()
-	delete(k.mu, deviceID)
 }
 
 // --- Scanners Management ---
@@ -120,7 +93,7 @@ func (k *Kernel) StopScanners() {
 	scanners := k.pluginManager.GetPluginsByType(plugin.PluginScanner)
 	for _, scanner := range scanners {
 		if err := k.pluginManager.StopPlugin(scanner); err != nil {
-			log.Printf("error stoppig scanner : %v", err)
+			log.Printf("error stopping scanner: %v", err)
 		}
 	}
 }
@@ -157,7 +130,7 @@ func (k *Kernel) StopAdapters() {
 	adapters := k.pluginManager.GetPluginsByType(plugin.PluginAdapter)
 	for _, adapter := range adapters {
 		if err := k.pluginManager.StopPlugin(adapter); err != nil {
-			log.Printf("error stoppig adapter : %v", err)
+			log.Printf("error stopping adapter: %v", err)
 		}
 	}
 }
@@ -168,7 +141,6 @@ func (k *Kernel) RegisterDevice(device *types.Device) error {
 	if err := k.repository.Save(device); err != nil {
 		return err
 	}
-	k.getMutex(device.ID)
 
 	log.Printf("[Kernel] Device registered: %s (ID: %s)", device.Name, device.ID)
 
@@ -188,14 +160,13 @@ func (k *Kernel) UnregisterDevice(deviceId string) error {
 
 	for _, adapterID := range device.AdapterIDs {
 		if err := k.UnlinkDeviceFromAdapter(device.ID, adapterID); err != nil {
-			log.Printf("[Kernel] Warning: Failed to link adapter %s: %v", adapterID, err)
+			log.Printf("[Kernel] Warning: Failed to unlink adapter %s: %v", adapterID, err)
 		}
 	}
 
 	if err := k.repository.Delete(device.ID); err != nil {
 		return err
 	}
-	k.deleteMutex(device.ID)
 
 	log.Printf("[Kernel] Device unregistered: %s (ID: %s)", device.Name, device.ID)
 

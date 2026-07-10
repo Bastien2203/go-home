@@ -30,9 +30,11 @@ func NewUserRepository(db *sql.DB) (*UserRepository, error) {
 
 func (r *UserRepository) Save(user *core.User) error {
 	query := `
-	INSERT OR REPLACE INTO users 
-	(id, email, password_hash)
+	INSERT INTO users (id, email, password_hash)
 	VALUES (?, ?, ?)
+	ON CONFLICT(id) DO UPDATE SET
+		email = excluded.email,
+		password_hash = excluded.password_hash
 	`
 
 	_, err := r.db.Exec(query,

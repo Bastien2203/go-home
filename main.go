@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/Bastien2203/go-home/internal/core"
 	"github.com/Bastien2203/go-home/internal/repository"
@@ -51,9 +52,9 @@ func main() {
 
 	wsHub := websockets.NewHub()
 	go wsHub.Run()
-	apiServer := server.NewServer(kernel, cfg.ApiPort, cfg.SessionSecret, cfg.AppEnv, wsHub, userRepo)
+	apiServer := server.NewServer(kernel, cfg.ApiPort, cfg.SessionSecret, cfg.AppEnv, wsHub, userRepo, cfg.ParsedAllowedOrigins())
 	go func() {
-		if err := apiServer.Start(); err != nil {
+		if err := apiServer.Start(); err != nil && err != http.ErrServerClosed {
 			log.Printf("Server error: %v", err)
 		}
 	}()
@@ -74,5 +75,12 @@ func main() {
 	fmt.Println("Stopping adapters...")
 	kernel.StopAdapters()
 
-	fmt.Println("\nShutting down...")
+	fmt.Println("Shutting down HTTP server...")
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	if err := apiServer.Shutdown(shutdownCtx); err != nil {
+		log.Printf("HTTP server shutdown error: %v", err)
+	}
+
+	fmt.Println("Shutdown complete.")
 }

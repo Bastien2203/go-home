@@ -50,9 +50,15 @@ func (r *DeviceRepository) Save(device *types.Device) error {
 	}
 
 	query := `
-	INSERT OR REPLACE INTO devices 
-	(id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated)
+	INSERT INTO devices (id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(id) DO UPDATE SET
+		address = excluded.address,
+		address_type = excluded.address_type,
+		name = excluded.name,
+		adapter_ids = excluded.adapter_ids,
+		capabilities = excluded.capabilities,
+		last_updated = excluded.last_updated
 	`
 
 	_, err = r.db.Exec(query,
@@ -62,7 +68,7 @@ func (r *DeviceRepository) Save(device *types.Device) error {
 		device.Name,
 		string(adapterIDsJson),
 		device.CreatedAt,
-		"",
+		"{}",
 		device.LastUpdated,
 	)
 
@@ -107,6 +113,12 @@ func (r *DeviceRepository) FindByAddress(address string, addressType types.Addre
 	return r.scanDevice(row)
 }
 
+func (r *DeviceRepository) findByIDTx(tx *sql.Tx, id string) (*types.Device, error) {
+	query := `SELECT id, address, address_type, name, adapter_ids, created_at, capabilities, last_updated FROM devices WHERE id = ?`
+	row := tx.QueryRow(query, id)
+	return r.scanDevice(row)
+}
+
 func (r *DeviceRepository) LinkAdapter(deviceID, adapterID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -114,12 +126,12 @@ func (r *DeviceRepository) LinkAdapter(deviceID, adapterID string) error {
 	}
 	defer tx.Rollback()
 
-	device, err := r.FindByID(deviceID)
+	device, err := r.findByIDTx(tx, deviceID)
 	if err != nil {
 		return err
 	}
 	if device == nil {
-		return nil // Device not found
+		return nil
 	}
 
 	if slices.Contains(device.AdapterIDs, adapterID) {
@@ -128,7 +140,10 @@ func (r *DeviceRepository) LinkAdapter(deviceID, adapterID string) error {
 
 	device.AdapterIDs = append(device.AdapterIDs, adapterID)
 
-	adapterIDsJson, _ := json.Marshal(device.AdapterIDs)
+	adapterIDsJson, err := json.Marshal(device.AdapterIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal adapter_ids: %w", err)
+	}
 
 	_, err = tx.Exec(`UPDATE devices SET adapter_ids = ? WHERE id = ?`, string(adapterIDsJson), deviceID)
 	if err != nil {
@@ -145,7 +160,7 @@ func (r *DeviceRepository) UnlinkAdapter(deviceID, adapterID string) error {
 	}
 	defer tx.Rollback()
 
-	device, err := r.FindByID(deviceID)
+	device, err := r.findByIDTx(tx, deviceID)
 	if err != nil {
 		return err
 	}
@@ -157,7 +172,10 @@ func (r *DeviceRepository) UnlinkAdapter(deviceID, adapterID string) error {
 		return e == adapterID
 	})
 
-	adapterIDsJson, _ := json.Marshal(device.AdapterIDs)
+	adapterIDsJson, err := json.Marshal(device.AdapterIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal adapter_ids: %w", err)
+	}
 
 	_, err = tx.Exec(`UPDATE devices SET adapter_ids = ? WHERE id = ?`, string(adapterIDsJson), deviceID)
 	if err != nil {
